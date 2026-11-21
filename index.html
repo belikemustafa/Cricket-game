@@ -290,6 +290,9 @@
             <div id="cricFpsBadge" class="px-2 py-1 rounded-lg bg-slate-950/80 border border-emerald-500/40 text-emerald-400 font-mono text-[11px] font-bold shadow">
               60 FPS
             </div>
+            <div id="cricDiffBadge" class="px-2 py-1 rounded-lg bg-slate-950/80 border border-sky-500/40 text-sky-300 text-[11px] font-extrabold shadow">
+              Medium Easy
+            </div>
           </div>
 
           <!-- Circular Field Radar Canvas -->
@@ -383,6 +386,32 @@
                          oninput="cricketUpdateCustomConfig(false)" onblur="cricketUpdateCustomConfig(true)"
                          class="w-full bg-slate-900 border border-slate-700 focus:border-orange-400 rounded-lg px-2 py-1.5 text-sm text-white font-bold text-center focus:outline-none" />
                 </div>
+              </div>
+            </div>
+
+            <!-- Batting & Fielding Difficulty Selector -->
+            <div id="cricDifficultyPicker" class="mb-4 text-left">
+              <div class="flex items-center justify-between mb-1.5">
+                <span class="text-[11px] font-extrabold uppercase tracking-wider text-slate-400">🎯 Difficulty Level</span>
+                <span id="cricDiffDesc" class="text-[11px] font-semibold text-sky-300">Balanced timing &amp; fair outfielders</span>
+              </div>
+              <div class="grid grid-cols-2 sm:grid-cols-4 gap-1.5">
+                <button onclick="cricketSetDifficulty('easy')" id="cricDiffEasy"
+                        class="py-2 px-2 rounded-xl border text-xs font-bold transition bg-slate-900 border-slate-700 text-slate-300">
+                  Easy
+                </button>
+                <button onclick="cricketSetDifficulty('mediumEasy')" id="cricDiffMediumEasy"
+                        class="py-2 px-2 rounded-xl border text-xs font-bold transition bg-sky-500/20 border-sky-400 text-sky-300">
+                  Medium Easy
+                </button>
+                <button onclick="cricketSetDifficulty('hard')" id="cricDiffHard"
+                        class="py-2 px-2 rounded-xl border text-xs font-bold transition bg-slate-900 border-slate-700 text-slate-300">
+                  Hard
+                </button>
+                <button onclick="cricketSetDifficulty('veryHard')" id="cricDiffVeryHard"
+                        class="py-2 px-2 rounded-xl border text-xs font-bold transition bg-slate-900 border-slate-700 text-slate-300">
+                  Very Hard
+                </button>
               </div>
             </div>
 
@@ -796,6 +825,53 @@
       custom: { targetRuns: 45, totalBalls: 18, startScore: 0,   startOvers: 0,  startWickets: 0, maxWickets: 5,  label: "Custom Chase" }
     };
 
+    const DIFFICULTY_LEVELS = {
+      easy: {
+        label: "Easy",
+        desc: "Big sweet spot, slower bowling & relaxed fielding",
+        badgeCls: "px-2 py-1 rounded-lg bg-slate-950/80 border border-emerald-500/40 text-emerald-300 text-[11px] font-extrabold shadow",
+        activeBtnCls: "py-2 px-2 rounded-xl border text-xs font-bold transition bg-emerald-500/20 border-emerald-400 text-emerald-300",
+        maxDy: 46, maxDx: 38,
+        paceMult: 0.85, swingMult: 0.6, spinMult: 0.55, penaltyMult: 0.2,
+        sweetThresh: 0.65, midThresh: 0.42, edgeThresh: 0.2,
+        loftSpeedBonus: 62, loftVzBonus: 36, airDrag: 0.93, gravity: 325,
+        fielderSpeed: 122, predictLanding: 0.15, catchRadius: 13, catchMaxZ: 28, catchChance: 0.4
+      },
+      mediumEasy: {
+        label: "Medium Easy",
+        desc: "Balanced timing, rewarding sixes & fair outfielders",
+        badgeCls: "px-2 py-1 rounded-lg bg-slate-950/80 border border-sky-500/40 text-sky-300 text-[11px] font-extrabold shadow",
+        activeBtnCls: "py-2 px-2 rounded-xl border text-xs font-bold transition bg-sky-500/20 border-sky-400 text-sky-300",
+        maxDy: 41, maxDx: 34,
+        paceMult: 0.94, swingMult: 0.8, spinMult: 0.78, penaltyMult: 0.45,
+        sweetThresh: 0.74, midThresh: 0.49, edgeThresh: 0.27,
+        loftSpeedBonus: 34, loftVzBonus: 20, airDrag: 0.90, gravity: 340,
+        fielderSpeed: 142, predictLanding: 0.45, catchRadius: 15, catchMaxZ: 34, catchChance: 0.62
+      },
+      hard: {
+        label: "Hard",
+        desc: "Crisp pace, tighter sweet spot & sharp catchers",
+        badgeCls: "px-2 py-1 rounded-lg bg-slate-950/80 border border-amber-500/40 text-amber-300 text-[11px] font-extrabold shadow",
+        activeBtnCls: "py-2 px-2 rounded-xl border text-xs font-bold transition bg-amber-500/20 border-amber-400 text-amber-300",
+        maxDy: 37, maxDx: 31,
+        paceMult: 1.0, swingMult: 1.0, spinMult: 1.0, penaltyMult: 0.75,
+        sweetThresh: 0.81, midThresh: 0.56, edgeThresh: 0.33,
+        loftSpeedBonus: 12, loftVzBonus: 10, airDrag: 0.88, gravity: 350,
+        fielderSpeed: 162, predictLanding: 0.78, catchRadius: 18, catchMaxZ: 40, catchChance: 0.86
+      },
+      veryHard: {
+        label: "Very Hard",
+        desc: "Pro simulation — razor-thin timing & elite fielding",
+        badgeCls: "px-2 py-1 rounded-lg bg-slate-950/80 border border-red-500/50 text-red-400 text-[11px] font-extrabold shadow",
+        activeBtnCls: "py-2 px-2 rounded-xl border text-xs font-bold transition bg-red-500/20 border-red-500 text-red-300",
+        maxDy: 34, maxDx: 28,
+        paceMult: 1.06, swingMult: 1.15, spinMult: 1.15, penaltyMult: 1.0,
+        sweetThresh: 0.87, midThresh: 0.64, edgeThresh: 0.38,
+        loftSpeedBonus: 0, loftVzBonus: 0, airDrag: 0.86, gravity: 360,
+        fielderSpeed: 180, predictLanding: 1.0, catchRadius: 21, catchMaxZ: 46, catchChance: 1.0
+      }
+    };
+
     const TEAM_PRESETS = {
       JAJ: { tag: "JAJ", name: "Jaipur Jaguars",  jersey: "#0284c7", badgeBg: "#38bdf8", badgeText: "#0f172a", led: "#38bdf8", fielder: "#1d4ed8" },
       MUM: { tag: "MUM", name: "Mumbai Titans",   jersey: "#1d4ed8", badgeBg: "#3b82f6", badgeText: "#ffffff", led: "#60a5fa", fielder: "#0f766e" },
@@ -907,6 +983,7 @@
       viewH: 600,
 
       mode: "pro",
+      difficulty: "mediumEasy",
       seed: randomSeedInt(),
       rng: null,
       paused: true,
@@ -1008,7 +1085,7 @@
       cric.radarCtx = cric.radarCanvas.getContext("2d");
 
       cric.fielders = CRIC_FIELD_HOME.map(p => ({
-        homeX: p.x, homeY: p.y, x: p.x, y: p.y, speed: 148
+        homeX: p.x, homeY: p.y, x: p.x, y: p.y, speed: 178
       }));
 
       // Keyboard Controls
@@ -1137,7 +1214,11 @@
         if (savedTheme && STADIUM_THEMES[savedTheme]) setStadiumTheme(savedTheme);
         const savedTeam = localStorage.getItem("pro_cricket_team");
         if (savedTeam && TEAM_PRESETS[savedTeam]) setTeamPreset(savedTeam);
-      } catch (e) {}
+        const savedDiff = localStorage.getItem("pro_cricket_difficulty");
+        cricketSetDifficulty(savedDiff && DIFFICULTY_LEVELS[savedDiff] ? savedDiff : cric.difficulty, false);
+      } catch (e) {
+        cricketSetDifficulty(cric.difficulty, false);
+      }
       renderCareerStats();
     }
 
@@ -1246,37 +1327,38 @@
       cricketResetMatchState(false);
     }
 
-    function cricketUpdateCustomConfig(clampInputs = false, shouldReset = true) {
-      const runsEl = document.getElementById("customRunsInput");
-      const ballsEl = document.getElementById("customBallsInput");
-      const wktsEl = document.getElementById("customWicketsInput");
-      if (!runsEl || !ballsEl || !wktsEl) return;
+    function cricketSetDifficulty(diffKey, savePref = true) {
+      if (!DIFFICULTY_LEVELS[diffKey]) return;
+      cric.difficulty = diffKey;
+      const cfg = DIFFICULTY_LEVELS[diffKey];
 
-      const runs = Math.max(1, Math.min(500, parseInt(runsEl.value, 10) || 1));
-      const balls = Math.max(1, Math.min(120, parseInt(ballsEl.value, 10) || 1));
-      const wickets = Math.max(1, Math.min(10, parseInt(wktsEl.value, 10) || 1));
+      const btnMap = {
+        easy: "cricDiffEasy",
+        mediumEasy: "cricDiffMediumEasy",
+        hard: "cricDiffHard",
+        veryHard: "cricDiffVeryHard"
+      };
+      Object.entries(btnMap).forEach(([key, id]) => {
+        const el = document.getElementById(id);
+        if (!el) return;
+        el.className = key === diffKey
+          ? cfg.activeBtnCls
+          : "py-2 px-2 rounded-xl border text-xs font-bold transition bg-slate-900 border-slate-700 text-slate-300 hover:border-slate-500";
+      });
 
-      if (clampInputs) {
-        runsEl.value = runs;
-        ballsEl.value = balls;
-        wktsEl.value = wickets;
+      const descEl = document.getElementById("cricDiffDesc");
+      if (descEl) descEl.textContent = cfg.desc;
+
+      const badgeEl = document.getElementById("cricDiffBadge");
+      if (badgeEl) {
+        badgeEl.textContent = cfg.label;
+        badgeEl.className = cfg.badgeCls;
       }
 
-      CRIC_MODES.custom.targetRuns = runs;
-      CRIC_MODES.custom.totalBalls = balls;
-      CRIC_MODES.custom.maxWickets = wickets;
+      cric.fielders.forEach(f => { f.speed = cfg.fielderSpeed; });
 
-      const subEl = document.getElementById("cricCustomSub");
-      if (subEl) subEl.textContent = `${runs} off ${balls}`;
-
-      const prevEl = document.getElementById("cricCustomRRRPreview");
-      if (prevEl) {
-        const rrr = ((runs / balls) * 6).toFixed(2);
-        prevEl.textContent = `RRR ${rrr} · ${wickets} wkt${wickets === 1 ? "" : "s"}`;
-      }
-
-      if (shouldReset && cric.mode === "custom") {
-        cricketResetMatchState(false);
+      if (savePref) {
+        try { localStorage.setItem("pro_cricket_difficulty", diffKey); } catch (e) {}
       }
     }
 
@@ -1345,6 +1427,7 @@
         document.getElementById("cricModalText").innerHTML = "Catch your breath! Press <b>Resume Match</b> to jump back to the crease.";
         document.getElementById("cricModePicker").classList.add("hidden");
         document.getElementById("cricCustomPanel").classList.add("hidden");
+        document.getElementById("cricDifficultyPicker").classList.add("hidden");
         document.getElementById("cricModalBtn").textContent = "Resume Match";
         modal.classList.remove("hidden");
       } else {
@@ -1401,9 +1484,10 @@
       cric.throwActive = false;
 
       // Pick seeded delivery type
+      const diff = DIFFICULTY_LEVELS[cric.difficulty] || DIFFICULTY_LEVELS.mediumEasy;
       const dType = DELIVERY_TYPES[Math.floor(rng() * DELIVERY_TYPES.length)];
-      const pace = dType.paceMin + rng() * (dType.paceMax - dType.paceMin);
-      const kmh = Math.round(dType.kmhBase + (rng() - 0.5) * 8);
+      const pace = (dType.paceMin + rng() * (dType.paceMax - dType.paceMin)) * diff.paceMult;
+      const kmh = Math.round((dType.kmhBase + (rng() - 0.5) * 8) * Math.min(1.06, Math.max(0.88, diff.paceMult)));
       const bounceY = dType.bounceMin + rng() * (dType.bounceMax - dType.bounceMin);
       const targetX = (rng() - 0.5) * 34;
 
@@ -1417,11 +1501,12 @@
         pace,
         bounceY,
         targetX,
-        swingAx: dType.swing * (rng() < 0.5 ? 1 : -1) * (0.7 + rng() * 0.5),
-        spinTurn: dType.spin * (rng() < 0.5 ? 1 : -1),
+        swingAx: dType.swing * diff.swingMult * (rng() < 0.5 ? 1 : -1) * (0.7 + rng() * 0.5),
+        spinTurn: dType.spin * diff.spinMult * (rng() < 0.5 ? 1 : -1),
         bounced: false,
         hit: false,
         inAir: false,
+        catchAttempted: false,
         dead: false,
         shotAngle: 0,
         trail: []
@@ -1430,6 +1515,7 @@
       cric.fielders.forEach(f => {
         f.x = f.homeX;
         f.y = f.homeY;
+        f.speed = diff.fielderSpeed;
       });
 
       document.getElementById("cricRunWidget").classList.add("hidden");
@@ -1443,59 +1529,100 @@
         cric.batSwungThisBall = true;
         cric.batSwing = 1.0;
 
+        const diff = DIFFICULTY_LEVELS[cric.difficulty] || DIFFICULTY_LEVELS.mediumEasy;
         const idealY = 104;
+        const maxDy = diff.maxDy;
+        const maxDx = diff.maxDx;
         const dy = cric.ball.y - idealY; // negative = early, positive = late
         const dx = Math.abs(cric.ball.x - cric.batX);
 
-        if (Math.abs(dy) < 44 && dx < 38) {
-          const timingQuality = 1 - Math.abs(dy) / 44;
-          const alignQuality = 1 - dx / 38;
-          const sweetSpot = timingQuality * 0.72 + alignQuality * 0.28;
+        if (Math.abs(dy) < maxDy && dx < maxDx) {
+          const timingQuality = 1 - Math.abs(dy) / maxDy;
+          const alignQuality = 1 - dx / maxDx;
+          const rawSweetSpot = timingQuality * 0.65 + alignQuality * 0.35;
+
+          // Delivery difficulty penalty scaled by selected difficulty
+          let difficultyPenalty = 0;
+          if (cric.ball.bounceY > 74) difficultyPenalty = (cric.loftMode ? 0.08 : 0.02) * diff.penaltyMult;
+          else if (cric.ball.bounceY < 20) difficultyPenalty = (cric.loftMode ? 0.05 : 0.02) * diff.penaltyMult;
+          else if (cric.ball.spinTurn !== 0) difficultyPenalty = (cric.loftMode ? 0.04 : 0.015) * diff.penaltyMult;
+
+          const sweetSpot = Math.max(0, rawSweetSpot - difficultyPenalty);
 
           cric.ball.hit = true;
           cric.phase = "inplay";
           cric.ball.trail = [];
 
-          const timingAngleOffset = (dy / 44) * 1.18;
-          const stanceOffset = -(cric.batX / 28) * 0.45;
+          const timingAngleOffset = (dy / maxDy) * 1.18;
+          const stanceOffset = -(cric.batX / 28) * 0.48;
           const shotAngle = -Math.PI / 2 - timingAngleOffset + stanceOffset + (Math.random() - 0.5) * 0.1;
           cric.ball.shotAngle = shotAngle;
 
-          let speed = 225 + sweetSpot * 410;
-          let loftVz = cric.loftMode ? (130 + sweetSpot * 155) : (26 + sweetSpot * 42);
+          let speed = 180;
+          let loftVz = 35;
+          let ballGoesInAir = cric.loftMode;
 
-          if (sweetSpot > 0.76) {
-            speed = cric.loftMode ? (510 + Math.random() * 135) : (485 + Math.random() * 120);
-            loftVz = cric.loftMode ? (245 + Math.random() * 70) : (32 + Math.random() * 24);
+          if (sweetSpot >= diff.sweetThresh) {
+            // Middle-of-the-bat connection: clears the ropes on loft or rockets along the carpet
+            const perf = Math.min(1, (sweetSpot - diff.sweetThresh) / Math.max(0.08, 1 - diff.sweetThresh));
+            speed = cric.loftMode
+              ? (470 + diff.loftSpeedBonus + perf * 115 + (Math.random() - 0.5) * 24)
+              : (450 + diff.loftSpeedBonus * 0.5 + perf * 110 + (Math.random() - 0.5) * 20);
+            loftVz = cric.loftMode
+              ? (205 + diff.loftVzBonus + perf * 48 + (Math.random() - 0.5) * 14)
+              : 0;
+            ballGoesInAir = cric.loftMode;
             cricAudio.playBatCrack(1.3);
             cric.shakeTimer = 0.16;
             cric.shakeIntensity = 4;
             cric.slowMoTimer = 0.14;
-            showTimingBadge(cric.loftMode ? "⚡ PERFECT LOFT!" : "⚡ CRACKING DRIVE!", "bg-emerald-500/20 border-emerald-400 text-emerald-300");
+            showTimingBadge(cric.loftMode ? "⚡ SWEET SPOT!" : "⚡ CRACKING DRIVE!", "bg-emerald-500/20 border-emerald-400 text-emerald-300");
             spawnParticles(cric.ball.x, cric.ball.y, 16, ["#facc15", "#ffffff", "#34d399"], [70, 190], 0.55);
-          } else if (sweetSpot > 0.48) {
-            speed = 305 + Math.random() * 130;
-            loftVz = cric.loftMode ? (115 + Math.random() * 75) : (20 + Math.random() * 24);
+          } else if (sweetSpot >= diff.midThresh) {
+            // Solid contact: deep hit on loft (can drop safe or clear on easier modes), crisp carpet drive on ground
+            const mid = (sweetSpot - diff.midThresh) / Math.max(0.1, diff.sweetThresh - diff.midThresh);
+            speed = cric.loftMode
+              ? (305 + diff.loftSpeedBonus * 0.8 + mid * 125 + (Math.random() - 0.5) * 24)
+              : (310 + mid * 120 + (Math.random() - 0.5) * 20);
+            loftVz = cric.loftMode
+              ? (150 + diff.loftVzBonus * 0.7 + Math.random() * 48)
+              : 0;
+            ballGoesInAir = cric.loftMode;
             cricAudio.playBatCrack(0.85);
-            showTimingBadge(dy < 0 ? "EARLY TIMING" : "LATE TIMING", "bg-amber-500/20 border-amber-400 text-amber-300");
+            showTimingBadge(
+              cric.loftMode ? (dy < 0 ? "EARLY LOFT" : "LATE LOFT") : (dy < 0 ? "EARLY DRIVE" : "LATE DRIVE"),
+              "bg-amber-500/20 border-amber-400 text-amber-300"
+            );
             spawnParticles(cric.ball.x, cric.ball.y, 8, ["#fde047", "#ffffff"], [40, 120], 0.4);
+          } else if (sweetSpot >= diff.edgeThresh) {
+            // Mistimed loft pops up; grounded stays safely along the turf for singles
+            speed = cric.loftMode ? (155 + diff.loftSpeedBonus * 0.5 + Math.random() * 95) : (175 + Math.random() * 95);
+            loftVz = cric.loftMode ? (175 + Math.random() * 55) : 0;
+            ballGoesInAir = cric.loftMode;
+            cricAudio.playBatCrack(0.5);
+            showTimingBadge(
+              cric.loftMode ? "⚠️ TOP EDGE!" : "SOFT HANDS",
+              cric.loftMode ? "bg-orange-500/20 border-orange-400 text-orange-300" : "bg-sky-500/20 border-sky-400 text-sky-300"
+            );
           } else {
-            speed = 135 + Math.random() * 100;
-            loftVz = cric.loftMode ? (160 + Math.random() * 75) : (45 + Math.random() * 45);
-            cricAudio.playBatCrack(0.35);
+            speed = 90 + Math.random() * 80;
+            loftVz = cric.loftMode ? (135 + Math.random() * 55) : (cric.difficulty === "veryHard" || cric.difficulty === "hard" ? 52 : 0);
+            ballGoesInAir = loftVz > 20;
+            cricAudio.playBatCrack(0.32);
             showTimingBadge("MISTIMED EDGE!", "bg-red-500/20 border-red-400 text-red-300");
           }
 
           cric.ball.vx = Math.cos(shotAngle) * speed;
           cric.ball.vy = Math.sin(shotAngle) * speed;
           cric.ball.vz = loftVz;
-          cric.ball.inAir = true;
+          cric.ball.inAir = ballGoesInAir;
+          if (!ballGoesInAir) cric.ball.z = 0;
 
           document.getElementById("cricRunWidget").classList.remove("hidden");
           document.getElementById("cricBallRunsNum").textContent = "0";
         } else {
           cricAudio.playTone(175, "sine", 0.08, 0.08, 105);
-          showTimingBadge(dy < -44 ? "TOO EARLY" : "MISSED", "bg-slate-800/90 border-slate-600 text-slate-300");
+          showTimingBadge(dy < -maxDy ? "TOO EARLY" : "MISSED", "bg-slate-800/90 border-slate-600 text-slate-300");
         }
       }
       // 2. Sprint runs between wickets
@@ -1656,6 +1783,7 @@
         document.getElementById("cricModalText").innerHTML =
           `<b>${summary}</b><br/><span class="text-slate-400">Final Score:</span> <b class="text-white">${tag} ${cric.score}-${cric.wickets}</b> (+${cric.runsScoredThisMatch} runs in ${cric.ballsBowled} balls)${extraDuelHtml}`;
         document.getElementById("cricModePicker").classList.remove("hidden");
+        document.getElementById("cricDifficultyPicker").classList.remove("hidden");
         if (cric.mode === "custom") {
           document.getElementById("cricCustomPanel").classList.remove("hidden");
         } else {
@@ -1840,6 +1968,7 @@
           return;
         }
       } else if (cric.phase === "inplay") {
+        const diff = DIFFICULTY_LEVELS[cric.difficulty] || DIFFICULTY_LEVELS.mediumEasy;
         const b = cric.ball;
         b.x += b.vx * dt;
         b.y += b.vy * dt;
@@ -1847,7 +1976,11 @@
         if (b.trail.length > 36) b.trail.shift();
 
         if (b.z > 0 || b.vz > 0) {
-          b.vz -= 340 * dt;
+          // Aerodynamic drag & gravity scaled by difficulty
+          const airDrag = Math.pow(diff.airDrag, dt);
+          b.vx *= airDrag;
+          b.vy *= airDrag;
+          b.vz -= diff.gravity * dt;
           b.z += b.vz * dt;
           if (b.z <= 0) {
             b.z = 0;
@@ -1880,11 +2013,24 @@
           return;
         }
 
-        // Fielders chase ball
+        // Fielder landing-spot anticipation scaled by difficulty
+        let interceptX = b.x;
+        let interceptY = b.y;
+        if (b.inAir && b.z > 6 && diff.predictLanding > 0) {
+          const tLand = (b.vz + Math.sqrt(Math.max(0, b.vz * b.vz + 2 * diff.gravity * b.z))) / diff.gravity;
+          const predX = b.x + b.vx * tLand * 0.91;
+          const predY = b.y + b.vy * tLand * 0.91;
+          if (Math.hypot(predX, predY) < CRIC_WORLD_RADIUS + 18) {
+            interceptX = b.x + (predX - b.x) * diff.predictLanding;
+            interceptY = b.y + (predY - b.y) * diff.predictLanding;
+          }
+        }
+
+        // Fielders chase ball / landing spot
         let nearestIdx = 0;
         let nearestDist = Infinity;
         cric.fielders.forEach((f, idx) => {
-          const d = Math.hypot(b.x - f.x, b.y - f.y);
+          const d = Math.hypot(interceptX - f.x, interceptY - f.y);
           if (d < nearestDist) {
             nearestDist = d;
             nearestIdx = idx;
@@ -1892,21 +2038,35 @@
         });
 
         cric.fielders.forEach((f, idx) => {
-          const targetX = idx === nearestIdx ? b.x : f.homeX + (b.x - f.homeX) * 0.18;
-          const targetY = idx === nearestIdx ? b.y : f.homeY + (b.y - f.homeY) * 0.18;
+          const targetX = idx === nearestIdx ? interceptX : f.homeX + (interceptX - f.homeX) * 0.2;
+          const targetY = idx === nearestIdx ? interceptY : f.homeY + (interceptY - f.homeY) * 0.2;
           const dx = targetX - f.x;
           const dy = targetY - f.y;
           const dist = Math.hypot(dx, dy);
           if (dist > 3) {
-            const spd = idx === nearestIdx ? f.speed : f.speed * 0.55;
+            const spd = idx === nearestIdx ? f.speed : f.speed * 0.58;
             f.x += (dx / dist) * spd * dt;
             f.y += (dy / dist) * spd * dt;
           }
 
-          if (idx === nearestIdx && dist < 16) {
-            if (b.inAir && b.z > 6 && b.z < 42) {
-              cricketConcludeBall(0, true, "Caught!");
-              return;
+          const ballDist = Math.hypot(b.x - f.x, b.y - f.y);
+          const catchReach = b.inAir ? diff.catchRadius : 16;
+          if (idx === nearestIdx && ballDist < catchReach) {
+            if (b.inAir && !b.catchAttempted && b.z > 4 && b.z < diff.catchMaxZ && (b.vz < 55 || b.z < 24)) {
+              b.catchAttempted = true;
+              if (Math.random() <= diff.catchChance) {
+                cricketConcludeBall(0, true, "Caught!");
+                return;
+              } else {
+                // Dropped catch / falls just short — ball hits turf safely!
+                b.inAir = false;
+                b.z = 0;
+                b.vz = 0;
+                b.vx *= 0.35;
+                b.vy *= 0.35;
+                showTimingBadge("DROPPED! RUN!", "bg-emerald-500/20 border-emerald-400 text-emerald-300");
+                setCommentary("🎙️ OH! Put down in the outfield! Safe — sprint for runs!");
+              }
             } else if (!b.inAir || b.z <= 8) {
               cric.phase = "returning";
               cric.throwActive = true;
@@ -2235,8 +2395,8 @@
 
       // Sweet-spot batting zone highlight
       if (cric.phase === "delivery" && !cric.ball.hit) {
-        ctx.fillStyle = "rgba(52, 211, 153, 0.14)";
-        ctx.fillRect(-pw / 2 + 5, 86, pw - 10, 32);
+        ctx.fillStyle = "rgba(52, 211, 153, 0.16)";
+        ctx.fillRect(-pw / 2 + 5, 92, pw - 10, 24);
       }
 
       // White Crease Lines
@@ -2603,6 +2763,7 @@
       const params = new URLSearchParams({
         seed: String(cric.seed),
         mode: cric.mode,
+        diff: cric.difficulty,
         beat: String(cric.runsScoredThisMatch),
         from: duel.playerName
       });
@@ -2681,7 +2842,7 @@
 
         duel.peer.on("open", (id) => {
           const base = getBasePageUrl();
-          const params = new URLSearchParams({ room: id, mode: cric.mode, seed: String(matchSeed) });
+          const params = new URLSearchParams({ room: id, mode: cric.mode, diff: cric.difficulty, seed: String(matchSeed) });
           if (cric.mode === "custom") {
             params.set("cr", String(CRIC_MODES.custom.targetRuns));
             params.set("cb", String(CRIC_MODES.custom.totalBalls));
@@ -2743,7 +2904,7 @@
           const customCfg = cric.mode === "custom"
             ? { targetRuns: CRIC_MODES.custom.targetRuns, totalBalls: CRIC_MODES.custom.totalBalls, maxWickets: CRIC_MODES.custom.maxWickets }
             : null;
-          conn.send({ type: "start", mode: cric.mode, seed, customCfg });
+          conn.send({ type: "start", mode: cric.mode, diff: cric.difficulty, seed, customCfg });
           updateRivalBanner();
           runSyncedCountdown(() => cricketStartMatch(true));
         }
@@ -2755,6 +2916,9 @@
           duel.rivalName = msg.name || "Friend";
           updateRivalBanner();
         } else if (msg.type === "start") {
+          if (msg.diff && DIFFICULTY_LEVELS[msg.diff]) {
+            cricketSetDifficulty(msg.diff, false);
+          }
           if (msg.mode === "custom" && msg.customCfg) {
             document.getElementById("customRunsInput").value = msg.customCfg.targetRuns;
             document.getElementById("customBallsInput").value = msg.customCfg.totalBalls;
@@ -2799,11 +2963,16 @@
       const room = params.get("room");
       const seed = params.get("seed");
       const mode = params.get("mode");
+      const diff = params.get("diff");
       const beat = params.get("beat");
       const from = params.get("from");
       const cr = params.get("cr");
       const cb = params.get("cb");
       const cw = params.get("cw");
+
+      if (diff && DIFFICULTY_LEVELS[diff]) {
+        cricketSetDifficulty(diff, false);
+      }
 
       if (mode === "custom" && (cr || cb || cw)) {
         if (cr) document.getElementById("customRunsInput").value = cr;
