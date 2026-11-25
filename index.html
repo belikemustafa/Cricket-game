@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-  <title>Pro Cricket Chase — 60 FPS T20 Stadium Game</title>
+  <title>Cricket Rush — 60 FPS T20 Stadium Game</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -59,14 +59,43 @@
     .cricket-stage {
       position: relative;
       width: 100%;
-      height: min(76vh, 690px);
-      min-height: 500px;
+      height: min(70vh, 640px);
+      min-height: 440px;
       overflow: hidden;
       touch-action: none;
       user-select: none;
       background: #0c1f12;
-      border-radius: 18px;
+      border-radius: 18px 18px 0 0;
       box-shadow: 0 28px 70px rgba(0, 0, 0, 0.8), 0 0 0 1px rgba(255, 255, 255, 0.1);
+    }
+
+    .cricket-stage.deck-hidden {
+      border-radius: 18px;
+      height: min(76vh, 690px);
+    }
+
+    /* Compact Ergonomic On-Screen Control Deck */
+    .touch-deck {
+      width: 100%;
+      background: linear-gradient(180deg, rgba(11, 20, 32, 0.98) 0%, rgba(6, 12, 20, 0.99) 100%);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-top: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 0 0 18px 18px;
+      padding: 8px 10px;
+      user-select: none;
+      touch-action: none;
+      box-shadow: 0 18px 40px rgba(0, 0, 0, 0.65);
+    }
+
+    .ctrl-pad-btn {
+      user-select: none;
+      -webkit-user-select: none;
+      touch-action: manipulation;
+      transition: transform 0.08s ease, background-color 0.12s ease, border-color 0.12s ease, box-shadow 0.12s ease;
+    }
+    .ctrl-pad-btn:active,
+    .ctrl-pad-btn.is-pressed {
+      transform: scale(0.94);
     }
 
     /* Distraction-Free Theater Mode */
@@ -76,11 +105,25 @@
     body.theater-mode .arena-wrapper {
       max-width: 100%;
       padding: 0;
+      height: calc(100dvh - 46px);
+      display: flex;
+      flex-direction: column;
+    }
+    @media (min-width: 640px) {
+      body.theater-mode .arena-wrapper {
+        height: calc(100dvh - 54px);
+      }
     }
     body.theater-mode .cricket-stage {
-      height: calc(100dvh - 54px);
+      flex: 1 1 auto;
+      height: auto;
+      min-height: 0;
       border-radius: 0;
       box-shadow: none;
+    }
+    body.theater-mode .touch-deck {
+      border-radius: 0;
+      flex-shrink: 0;
     }
     body.theater-mode .website-below-fold {
       display: none;
@@ -88,12 +131,20 @@
 
     @media (max-width: 640px) {
       .arena-wrapper {
-        padding: 6px 6px 0 6px;
+        padding: 4px 4px 0 4px;
       }
       .cricket-stage {
-        height: 74dvh;
-        min-height: 460px;
+        height: calc(100dvh - 150px);
+        min-height: 360px;
+        border-radius: 14px 14px 0 0;
+      }
+      .cricket-stage.deck-hidden {
+        height: calc(100dvh - 58px);
         border-radius: 14px;
+      }
+      .touch-deck {
+        padding: 7px 8px calc(7px + env(safe-area-inset-bottom, 0px)) 8px;
+        border-radius: 0 0 14px 14px;
       }
     }
 
@@ -161,18 +212,18 @@
   <div class="app-shell">
     <!-- ==================== TOP WEBSITE HEADER ==================== -->
     <header class="sticky top-0 shrink-0 z-40 bg-slate-950/90 backdrop-blur-md border-b border-white/10">
-      <div class="max-w-[1440px] mx-auto px-3 sm:px-5 h-[54px] flex items-center justify-between gap-2">
+      <div class="max-w-[1440px] mx-auto px-2.5 sm:px-5 h-[46px] sm:h-[54px] flex items-center justify-between gap-1.5 sm:gap-2">
         <!-- Brand -->
-        <a href="#arena" class="flex items-center gap-2.5 group">
-          <div class="w-8 h-8 rounded-xl bg-gradient-to-br from-orange-500 via-amber-500 to-red-600 flex items-center justify-center text-lg shadow-lg shadow-orange-600/25 group-hover:scale-105 transition">
+        <a href="#arena" class="flex items-center gap-2 group">
+          <div class="w-7 h-7 sm:w-8 sm:h-8 rounded-lg sm:rounded-xl bg-gradient-to-br from-orange-500 via-amber-500 to-red-600 flex items-center justify-center text-base sm:text-lg shadow-lg shadow-orange-600/25 group-hover:scale-105 transition">
             🏏
           </div>
           <div class="leading-tight">
-            <div class="font-black text-sm sm:text-base tracking-tight text-white">
-              PRO CRICKET <span class="text-orange-400">CHASE</span>
+            <div class="font-black text-xs sm:text-base tracking-tight text-white">
+              CRICKET <span class="text-orange-400">RUSH</span>
             </div>
             <div class="text-[10px] font-semibold text-emerald-400 hidden sm:block tracking-wider uppercase">
-              60 FPS Stadium Engine · T20 Edition
+              60 FPS Stadium Engine · T20 Chase
             </div>
           </div>
         </a>
@@ -186,18 +237,22 @@
         </nav>
 
         <!-- Action Buttons -->
-        <div class="flex items-center gap-1.5 sm:gap-2">
+        <div class="flex items-center gap-1 sm:gap-2">
+          <button id="deckToggleBtn" onclick="toggleControlDeck()" title="Show / Hide On-Screen Controls"
+                  class="px-2 sm:px-3 py-1.5 rounded-lg sm:rounded-xl bg-emerald-500/20 hover:bg-emerald-500/30 border border-emerald-500/40 text-emerald-300 text-xs font-bold transition flex items-center gap-1">
+            <span>🎮</span><span class="hidden sm:inline">Controls</span>
+          </button>
           <button id="theaterBtn" onclick="toggleTheaterMode()" title="Toggle Theater / Full-Screen Arena"
-                  class="px-2.5 sm:px-3 py-1.5 rounded-xl bg-slate-900 hover:bg-slate-800 border border-slate-700 text-slate-200 text-xs font-bold transition flex items-center gap-1.5">
+                  class="px-2 sm:px-3 py-1.5 rounded-lg sm:rounded-xl bg-slate-900 hover:bg-slate-800 border border-slate-700 text-slate-200 text-xs font-bold transition flex items-center gap-1">
             <span id="theaterIcon">⛶</span><span class="hidden sm:inline" id="theaterLabel">Theater</span>
           </button>
           <button onclick="openWagonWheelModal()" title="View Shot Map (Wagon Wheel)"
-                  class="px-2.5 sm:px-3 py-1.5 rounded-xl bg-slate-900 hover:bg-slate-800 border border-slate-700 text-slate-200 text-xs font-bold transition flex items-center gap-1.5">
+                  class="px-2 sm:px-3 py-1.5 rounded-lg sm:rounded-xl bg-slate-900 hover:bg-slate-800 border border-slate-700 text-slate-200 text-xs font-bold transition flex items-center gap-1">
             <span>📊</span><span class="hidden sm:inline">Shots</span>
           </button>
           <button onclick="openChallengeModal()"
-                  class="btn-pulse px-3 sm:px-4 py-1.5 rounded-xl bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-400 hover:to-amber-400 text-slate-950 text-xs sm:text-sm font-black transition flex items-center gap-1.5 shadow-lg">
-            <span>⚔️</span><span>Challenge Friend</span>
+                  class="btn-pulse px-2.5 sm:px-4 py-1.5 rounded-lg sm:rounded-xl bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-400 hover:to-amber-400 text-slate-950 text-[11px] sm:text-sm font-black transition flex items-center gap-1 shadow-lg">
+            <span>⚔️</span><span class="hidden xs:inline sm:inline">Duel</span><span class="hidden md:inline"> Friend</span>
           </button>
         </div>
       </div>
@@ -210,24 +265,24 @@
         <canvas id="cricketCanvas"></canvas>
 
         <!-- TOP BROADCAST SCOREBOARD + COMMENTARY -->
-        <div class="absolute top-2.5 left-2.5 right-2.5 z-20 pointer-events-none flex flex-col items-center gap-1.5">
-          <div class="broadcast-bar rounded-xl w-full max-w-[1000px] px-2.5 sm:px-4 py-1.5 shadow-2xl">
+        <div class="absolute top-1.5 sm:top-2.5 left-1.5 sm:left-2.5 right-1.5 sm:right-2.5 z-20 pointer-events-none flex flex-col items-center gap-1">
+          <div class="broadcast-bar rounded-lg sm:rounded-xl w-full max-w-[1000px] px-2 sm:px-4 py-1 sm:py-1.5 shadow-2xl">
             <!-- Top Row -->
-            <div class="flex flex-wrap items-center justify-between gap-2 border-b border-white/10 pb-1">
-              <div class="flex items-center gap-2 sm:gap-3">
-                <span id="cricTeamTag" class="px-2 py-0.5 rounded bg-sky-400 text-slate-950 font-black text-xs sm:text-sm tracking-wide">JAJ</span>
-                <span id="cricScore" class="font-black text-lg sm:text-2xl text-white leading-none tracking-tight">180-1</span>
-                <span id="cricOvers" class="text-xs sm:text-sm font-semibold text-slate-300">18.0 <span class="text-[10px] text-slate-400">OV</span></span>
+            <div class="flex flex-wrap items-center justify-between gap-1 sm:gap-2 border-b border-white/10 pb-0.5 sm:pb-1">
+              <div class="flex items-center gap-1.5 sm:gap-3">
+                <span id="cricTeamTag" class="px-1.5 sm:px-2 py-0.5 rounded bg-sky-400 text-slate-950 font-black text-[10px] sm:text-sm tracking-wide">JAJ</span>
+                <span id="cricScore" class="font-black text-base sm:text-2xl text-white leading-none tracking-tight">180-1</span>
+                <span id="cricOvers" class="text-[11px] sm:text-sm font-semibold text-slate-300">18.0 <span class="text-[9px] sm:text-[10px] text-slate-400">OV</span></span>
                 <span id="cricDeliveryTag" class="hidden md:inline-flex items-center gap-1 px-2 py-0.5 rounded bg-slate-800/90 border border-slate-700 text-[11px] font-bold text-amber-300">
                   ⚡ Ready
                 </span>
               </div>
 
-              <div class="flex items-center gap-2 sm:gap-3">
-                <span id="cricTargetText" class="text-xs sm:text-sm font-bold text-slate-100">
+              <div class="flex items-center gap-1.5 sm:gap-3">
+                <span id="cricTargetText" class="text-[11px] sm:text-sm font-bold text-slate-100">
                   Need <span class="text-red-400 font-black">30</span> off 12
                 </span>
-                <span id="cricRRR" class="px-2 py-0.5 rounded bg-red-500 text-white font-extrabold text-[11px] sm:text-xs shadow">
+                <span id="cricRRR" class="px-1.5 sm:px-2 py-0.5 rounded bg-red-500 text-white font-extrabold text-[10px] sm:text-xs shadow">
                   RRR 15.00
                 </span>
                 <!-- 6-Ball Over Tracker -->
@@ -236,23 +291,23 @@
             </div>
 
             <!-- Bottom Row (Batsmen & Bowler) -->
-            <div class="flex items-center justify-between gap-2 pt-1 text-[11px] sm:text-xs">
-              <div class="flex items-center gap-3 sm:gap-5 truncate">
-                <span class="flex items-center gap-1 text-white font-bold">
+            <div class="flex items-center justify-between gap-2 pt-0.5 sm:pt-1 text-[10px] sm:text-xs">
+              <div class="flex items-center gap-2 sm:gap-5 truncate">
+                <span class="flex items-center gap-1 text-white font-bold truncate">
                   <span class="text-amber-400">▸</span>
                   <span id="cricStriker">R. Bhende 58 (34)</span>
                 </span>
                 <span id="cricNonStriker" class="text-slate-400 font-medium hidden sm:inline">D. Jhalani 61 (39)</span>
               </div>
-              <div class="flex items-center gap-1.5 text-slate-200 font-semibold shrink-0">
-                <span class="w-2 h-2 rounded-full bg-red-500 inline-block"></span>
+              <div class="flex items-center gap-1 text-slate-200 font-semibold shrink-0">
+                <span class="w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full bg-red-500 inline-block"></span>
                 <span id="cricBowler">Z. Mirzapuri 0-0 (0.0)</span>
               </div>
             </div>
           </div>
 
           <!-- LIVE RIVAL DUEL BAR (Visible during Friend Challenge / Seeded Battle) -->
-          <div id="cricRivalBar" class="hidden w-full max-w-[1000px] px-3 py-1 rounded-lg bg-gradient-to-r from-orange-600/90 via-amber-500/90 to-orange-600/90 text-slate-950 font-extrabold text-xs flex items-center justify-between shadow-lg">
+          <div id="cricRivalBar" class="hidden w-full max-w-[1000px] px-2.5 sm:px-3 py-0.5 sm:py-1 rounded-lg bg-gradient-to-r from-orange-600/90 via-amber-500/90 to-orange-600/90 text-slate-950 font-extrabold text-[10px] sm:text-xs flex items-center justify-between shadow-lg">
             <span id="cricRivalLeft">⚔️ LIVE DUEL</span>
             <span id="cricRivalRight">Waiting for rival...</span>
           </div>
@@ -266,56 +321,78 @@
         <!-- TIMING FEEDBACK FLOATING BADGE -->
         <div id="cricTimingBadge" class="hidden absolute left-1/2 top-[38%] -translate-x-1/2 z-20 pointer-events-none px-3.5 py-1 rounded-full font-black text-xs sm:text-sm tracking-wider uppercase shadow-2xl border"></div>
 
+        <!-- CRICKET RUSH VISUAL TIMING METER (Flashes on each swing) -->
+        <div id="cricTimingMeterWrap" class="hidden absolute left-1/2 bottom-16 sm:bottom-12 -translate-x-1/2 z-20 pointer-events-none w-52 sm:w-64 bg-slate-950/90 border border-white/15 rounded-xl px-2.5 py-1.5 shadow-2xl backdrop-blur-md">
+          <div class="flex items-center justify-between text-[9px] font-extrabold uppercase tracking-wider text-slate-400 mb-1">
+            <span>Early</span>
+            <span id="cricTimingMeterLabel" class="text-emerald-400">PERFECT</span>
+            <span>Late</span>
+          </div>
+          <div class="relative h-2.5 rounded-full overflow-hidden flex bg-slate-900 border border-white/10">
+            <div class="w-[20%] bg-red-500/80"></div>
+            <div class="w-[20%] bg-amber-400/85"></div>
+            <div class="w-[20%] bg-emerald-400"></div>
+            <div class="w-[20%] bg-amber-400/85"></div>
+            <div class="w-[20%] bg-red-500/80"></div>
+            <div id="cricTimingNeedle" class="absolute top-0 bottom-0 w-1.5 bg-white shadow-[0_0_8px_#fff] rounded-full transition-all duration-100" style="left: 50%; transform: translateX(-50%);"></div>
+          </div>
+        </div>
+
+        <!-- FREE HIT FLASH BANNER -->
+        <div id="cricFreeHitBadge" class="hidden absolute left-1/2 top-[22%] sm:top-[20%] -translate-x-1/2 z-20 pointer-events-none px-4 py-1 rounded-full bg-gradient-to-r from-fuchsia-600 via-amber-400 to-fuchsia-600 text-slate-950 font-black text-xs sm:text-sm tracking-widest uppercase shadow-[0_0_24px_rgba(250,204,21,0.75)] animate-pulse">
+          ⚡ FREE HIT — SWING BIG! ⚡
+        </div>
+
         <!-- DYNAMIC RIGHT CALLOUT (SIX!, FOUR!, OUT!, 2x DOTS) -->
-        <div id="cricCalloutBox" class="hidden absolute right-3 sm:right-6 top-1/2 -translate-y-1/2 z-20 pointer-events-none text-right">
-          <div id="cricCalloutBig" class="font-arcade text-5xl sm:text-7xl font-bold leading-none drop-shadow-[0_4px_12px_rgba(0,0,0,0.9)]"></div>
-          <div id="cricCalloutSub" class="inline-block mt-1 px-3 py-1 bg-slate-950/90 border-r-4 border-indigo-400 text-white font-black italic text-xs sm:text-sm tracking-widest uppercase shadow-xl"></div>
+        <div id="cricCalloutBox" class="hidden absolute right-2.5 sm:right-6 top-1/2 -translate-y-1/2 z-20 pointer-events-none text-right">
+          <div id="cricCalloutBig" class="font-arcade text-4xl sm:text-7xl font-bold leading-none drop-shadow-[0_4px_12px_rgba(0,0,0,0.9)]"></div>
+          <div id="cricCalloutSub" class="inline-block mt-1 px-2.5 sm:px-3 py-0.5 sm:py-1 bg-slate-950/90 border-r-4 border-indigo-400 text-white font-black italic text-[10px] sm:text-sm tracking-widest uppercase shadow-xl"></div>
         </div>
 
         <!-- BOTTOM-LEFT CONTROLS + LOFT TOGGLE + FPS + RADAR -->
-        <div class="absolute bottom-2.5 left-2.5 z-20 flex flex-col items-start gap-2">
-          <div class="flex flex-wrap items-center gap-1.5 sm:gap-2">
+        <div class="absolute bottom-2 left-2 sm:bottom-2.5 sm:left-2.5 z-20 flex flex-col items-start gap-1.5 sm:gap-2">
+          <div class="flex flex-wrap items-center gap-1 sm:gap-2">
             <button id="cricPauseBtn" onclick="cricketTogglePause()" title="Pause / Resume (P)"
-                    class="w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-slate-950/85 hover:bg-slate-800 border border-white/15 text-white flex items-center justify-center shadow-lg transition">
-              <span id="cricPauseIcon" class="text-xs sm:text-sm font-black">❚❚</span>
+                    class="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-slate-950/85 hover:bg-slate-800 border border-white/15 text-white flex items-center justify-center shadow-lg transition">
+              <span id="cricPauseIcon" class="text-[11px] sm:text-sm font-black">❚❚</span>
             </button>
             <button id="cricMuteBtn" onclick="cricketToggleMute()" title="Toggle Sound"
-                    class="w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-slate-950/85 hover:bg-slate-800 border border-white/15 text-white flex items-center justify-center shadow-lg transition">
-              <span id="cricMuteIcon" class="text-sm sm:text-base">🔊</span>
+                    class="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-slate-950/85 hover:bg-slate-800 border border-white/15 text-white flex items-center justify-center shadow-lg transition">
+              <span id="cricMuteIcon" class="text-xs sm:text-base">🔊</span>
             </button>
             <button id="cricLoftBtn" onclick="cricketToggleLoft()" title="Switch Loft vs Grounded Shot (Shift / W)"
-                    class="px-2.5 sm:px-3 h-9 sm:h-10 rounded-full bg-amber-500/90 hover:bg-amber-400 border border-amber-300 text-slate-950 font-black text-[11px] sm:text-xs shadow-lg transition flex items-center gap-1">
+                    class="hidden sm:flex px-3 h-10 rounded-full bg-amber-500/90 hover:bg-amber-400 border border-amber-300 text-slate-950 font-black text-xs shadow-lg transition items-center gap-1">
               <span>🚀</span><span id="cricLoftText">LOFT</span>
             </button>
-            <div id="cricFpsBadge" class="px-2 py-1 rounded-lg bg-slate-950/80 border border-emerald-500/40 text-emerald-400 font-mono text-[11px] font-bold shadow">
+            <div id="cricFpsBadge" class="px-1.5 sm:px-2 py-0.5 sm:py-1 rounded-md sm:rounded-lg bg-slate-950/80 border border-emerald-500/40 text-emerald-400 font-mono text-[10px] sm:text-[11px] font-bold shadow">
               60 FPS
             </div>
-            <div id="cricDiffBadge" class="px-2 py-1 rounded-lg bg-slate-950/80 border border-sky-500/40 text-sky-300 text-[11px] font-extrabold shadow">
+            <div id="cricDiffBadge" class="hidden sm:block px-2 py-1 rounded-lg bg-slate-950/80 border border-sky-500/40 text-sky-300 text-[11px] font-extrabold shadow">
               Medium Easy
             </div>
           </div>
 
-          <!-- Circular Field Radar Canvas -->
-          <div class="w-24 h-24 sm:w-32 sm:h-32 rounded-xl bg-slate-950/85 border border-white/15 p-1 shadow-2xl">
-            <canvas id="cricketRadar" width="128" height="128" class="w-full h-full block rounded-lg"></canvas>
+          <!-- Circular Field Radar Canvas (Compact on Portrait Phone) -->
+          <div class="w-16 h-16 sm:w-28 sm:h-28 rounded-lg sm:rounded-xl bg-slate-950/85 border border-white/15 p-0.5 sm:p-1 shadow-2xl">
+            <canvas id="cricketRadar" width="128" height="128" class="w-full h-full block rounded-md sm:rounded-lg"></canvas>
           </div>
         </div>
 
         <!-- BOTTOM-RIGHT RUNNING WIDGET (Active during ball in outfield) -->
         <div id="cricRunWidget" onclick="cricketTriggerAction()"
-             class="hidden absolute bottom-2.5 right-2.5 z-20 cursor-pointer w-24 sm:w-28 rounded-xl bg-slate-950/95 border-2 border-red-500/85 overflow-hidden shadow-2xl active:scale-95 transition">
-          <div class="bg-slate-900 py-1 text-center border-b border-white/10">
-            <div id="cricBallRunsNum" class="text-xl font-black text-white leading-none">0</div>
-            <div class="text-[9px] font-extrabold tracking-widest text-slate-400 uppercase">RUNS</div>
+             class="hidden absolute bottom-2 right-2 sm:bottom-2.5 sm:right-2.5 z-20 cursor-pointer w-20 sm:w-28 rounded-lg sm:rounded-xl bg-slate-950/95 border-2 border-red-500/85 overflow-hidden shadow-2xl active:scale-95 transition">
+          <div class="bg-slate-900 py-0.5 sm:py-1 text-center border-b border-white/10">
+            <div id="cricBallRunsNum" class="text-base sm:text-xl font-black text-white leading-none">0</div>
+            <div class="text-[8px] sm:text-[9px] font-extrabold tracking-widest text-slate-400 uppercase">RUNS</div>
           </div>
-          <div class="relative h-24 bg-[#2d5a27] flex items-center justify-center">
-            <div class="w-8 h-20 bg-[#d8c48c] border-y-2 border-white/70 relative">
-              <div id="cricRunnerTop" class="w-2.5 h-2.5 rounded-full bg-sky-400 border border-white absolute left-0.5 transition-all duration-100" style="top: 6px;"></div>
-              <div id="cricRunnerBot" class="w-2.5 h-2.5 rounded-full bg-amber-400 border border-white absolute right-0.5 transition-all duration-100" style="bottom: 6px;"></div>
+          <div class="relative h-16 sm:h-24 bg-[#2d5a27] flex items-center justify-center">
+            <div class="w-6 sm:w-8 h-14 sm:h-20 bg-[#d8c48c] border-y-2 border-white/70 relative">
+              <div id="cricRunnerTop" class="w-2 h-2 sm:w-2.5 sm:h-2.5 rounded-full bg-sky-400 border border-white absolute left-0.5 transition-all duration-100" style="top: 4px;"></div>
+              <div id="cricRunnerBot" class="w-2 h-2 sm:w-2.5 sm:h-2.5 rounded-full bg-amber-400 border border-white absolute right-0.5 transition-all duration-100" style="bottom: 4px;"></div>
             </div>
           </div>
-          <div class="bg-red-600 hover:bg-red-500 py-1.5 text-center text-[11px] font-black text-white tracking-wider">
-            SPC : RUN
+          <div class="bg-red-600 hover:bg-red-500 py-1 sm:py-1.5 text-center text-[9px] sm:text-[11px] font-black text-white tracking-wider">
+            TAP : RUN
           </div>
         </div>
 
@@ -335,28 +412,51 @@
         </div>
 
         <!-- START / PAUSE / MATCH END MODAL OVERLAY -->
-        <div id="cricModal" class="absolute inset-0 z-30 bg-slate-950/70 backdrop-blur-sm flex items-center justify-center p-4">
-          <div class="bg-[#0b1715]/95 border border-white/15 rounded-2xl max-w-md w-full max-h-[92%] overflow-y-auto p-5 sm:p-6 text-center shadow-2xl">
-            <div id="cricModalBadge" class="inline-block px-3 py-0.5 rounded-full bg-orange-500/15 border border-orange-500/30 text-orange-300 text-[11px] font-extrabold uppercase tracking-wider mb-2">
-              🏏 Floodlit T20 Chase
+        <div id="cricModal" class="absolute inset-0 z-30 bg-slate-950/70 backdrop-blur-sm flex items-center justify-center p-3 sm:p-4">
+          <div class="bg-[#0b1715]/95 border border-white/15 rounded-2xl max-w-md w-full max-h-[94%] overflow-y-auto p-4 sm:p-6 text-center shadow-2xl">
+            <div id="cricModalBadge" class="inline-block px-3 py-0.5 rounded-full bg-orange-500/15 border border-orange-500/30 text-orange-300 text-[11px] font-extrabold uppercase tracking-wider mb-1.5">
+              🏏 DEATH OVER CHALLENGE
             </div>
-            <h3 id="cricModalTitle" class="text-2xl sm:text-3xl font-black text-white mb-2">Pro Cricket Chase</h3>
-            <p id="cricModalText" class="text-slate-300 text-xs sm:text-sm leading-relaxed mb-4">
-              Press <b>Space</b> or <b>Tap</b> to hit &amp; sprint runs. Use <b>← / →</b> (or swipe) to move across the crease, and <b>Shift / W</b> to toggle <b>Loft</b> vs <b>Grounded</b> shots!
+            <h3 id="cricModalTitle" class="text-2xl sm:text-3xl font-black text-white mb-1">Cricket Rush</h3>
+
+            <!-- Cricket Rush Matchup Card -->
+            <div id="cricMatchCard" class="my-2.5 p-3 rounded-xl bg-slate-950/90 border border-white/10 flex items-center justify-between text-left">
+              <div>
+                <div class="text-[10px] font-extrabold uppercase tracking-wider text-slate-400">
+                  <span id="cricCardTeams" class="text-sky-400">JAJ vs MUM</span> · <span id="cricCardModeName">Death Over</span>
+                </div>
+                <div id="cricCardTarget" class="text-lg sm:text-xl font-black text-white leading-tight mt-0.5">
+                  30 <span class="text-xs font-bold text-slate-400">to win</span>
+                </div>
+              </div>
+              <div class="text-right">
+                <div id="cricCardMeta" class="text-xs font-bold text-slate-200">12 balls · 9 wkts</div>
+                <div id="cricCardRRR" class="inline-block mt-1 px-2 py-0.5 rounded bg-red-500/90 text-white font-black text-[10px]">RRR 15.00</div>
+              </div>
+            </div>
+
+            <p id="cricModalText" class="text-slate-300 text-xs sm:text-sm leading-relaxed mb-3.5">
+              Tap <b>HIT</b> (or <b>Space</b>) to time shots and tap <b>RUN</b> to sprint singles. Watch the timing gauge — <b>Early</b> pulls leg-side, <b>Perfect</b> smashes sixes, <b>Late</b> punches straight &amp; off-side!
             </p>
 
-            <!-- Mode Picker -->
-            <div id="cricModePicker" class="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-4">
-              <button onclick="cricketSetMode('easy')" id="cricModeEasy" class="py-2 px-2 rounded-xl border text-xs font-bold transition bg-slate-900 border-slate-700 text-slate-300">
-                Easy<br/><span class="text-[10px] font-normal text-slate-400">18 off 12</span>
+            <!-- Cricket Rush Mode Picker -->
+            <div id="cricModePicker" class="grid grid-cols-3 gap-1.5 sm:gap-2 mb-3.5">
+              <button onclick="cricketSetMode('pro')" id="cricModePro" class="py-2 px-1.5 rounded-xl border text-xs font-bold transition bg-orange-500/20 border-orange-500 text-orange-300">
+                Death Over<br/><span class="text-[10px] font-normal text-orange-200/80">30 off 12</span>
               </button>
-              <button onclick="cricketSetMode('pro')" id="cricModePro" class="py-2 px-2 rounded-xl border text-xs font-bold transition bg-orange-500/20 border-orange-500 text-orange-300">
-                Pro Chase<br/><span class="text-[10px] font-normal text-orange-200/80">30 off 12</span>
-              </button>
-              <button onclick="cricketSetMode('super')" id="cricModeSuper" class="py-2 px-2 rounded-xl border text-xs font-bold transition bg-slate-900 border-slate-700 text-slate-300">
+              <button onclick="cricketSetMode('super')" id="cricModeSuper" class="py-2 px-1.5 rounded-xl border text-xs font-bold transition bg-slate-900 border-slate-700 text-slate-300">
                 Super Over<br/><span class="text-[10px] font-normal text-slate-400">16 off 6</span>
               </button>
-              <button onclick="cricketSetMode('custom')" id="cricModeCustom" class="py-2 px-2 rounded-xl border text-xs font-bold transition bg-slate-900 border-slate-700 text-slate-300">
+              <button onclick="cricketSetMode('five')" id="cricModeFive" class="py-2 px-1.5 rounded-xl border text-xs font-bold transition bg-slate-900 border-slate-700 text-slate-300">
+                5 Overs<br/><span class="text-[10px] font-normal text-slate-400">65 off 30</span>
+              </button>
+              <button onclick="cricketSetMode('ten')" id="cricModeTen" class="py-2 px-1.5 rounded-xl border text-xs font-bold transition bg-slate-900 border-slate-700 text-slate-300">
+                10 Overs<br/><span class="text-[10px] font-normal text-slate-400">135 off 60</span>
+              </button>
+              <button onclick="cricketSetMode('nets')" id="cricModeNets" class="py-2 px-1.5 rounded-xl border text-xs font-bold transition bg-slate-900 border-slate-700 text-slate-300">
+                🏏 Nets<br/><span class="text-[10px] font-normal text-slate-400">Practice</span>
+              </button>
+              <button onclick="cricketSetMode('custom')" id="cricModeCustom" class="py-2 px-1.5 rounded-xl border text-xs font-bold transition bg-slate-900 border-slate-700 text-slate-300">
                 ⚙️ Custom<br/><span id="cricCustomSub" class="text-[10px] font-normal text-slate-400">45 off 18</span>
               </button>
             </div>
@@ -415,19 +515,67 @@
               </div>
             </div>
 
-            <div class="flex flex-col sm:flex-row items-center justify-center gap-2.5">
+            <div class="flex flex-col sm:flex-row items-center justify-center gap-2">
               <button id="cricModalBtn" onclick="cricketStartMatch()"
                       class="w-full sm:w-auto px-7 py-3 rounded-xl bg-gradient-to-b from-orange-500 to-orange-600 hover:from-orange-400 hover:to-orange-500 text-white font-extrabold text-sm sm:text-base shadow-lg shadow-orange-600/30 transition active:scale-95">
-                Start Match
+                ▶ Start the Chase
               </button>
               <button id="cricModalShareBtn" onclick="openChallengeModal(true)"
                       class="w-full sm:w-auto px-5 py-3 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-600 text-slate-100 font-bold text-sm transition active:scale-95">
-                ⚔️ Challenge a Friend
+                ⚔️ Challenge Friend
               </button>
+            </div>
+
+            <!-- Top Chasers Mini Leaderboard (Cricket Rush style) -->
+            <div id="cricModalLeaderboard" class="mt-4 pt-3 border-t border-white/10 text-left">
+              <div class="flex items-center justify-between text-[10px] font-extrabold uppercase tracking-wider text-slate-400 mb-1.5">
+                <span>🏆 Top Chasers</span>
+                <span id="cricLbModeTag">Death Over</span>
+              </div>
+              <div id="cricLbRows" class="space-y-1 text-xs"></div>
             </div>
           </div>
         </div>
       </main>
+
+      <!-- ERGONOMIC ON-SCREEN TOUCH CONTROLS DECK (Compact Portrait-Ready) -->
+      <div id="cricControlDeck" class="touch-deck">
+        <div class="max-w-[720px] mx-auto grid grid-cols-12 items-center gap-2">
+          <!-- Crease Footwork Controls (Left / Right) -->
+          <div class="col-span-5 grid grid-cols-2 gap-1.5 sm:gap-2">
+            <button id="ctrlLeftBtn" type="button" aria-label="Move Left in Crease"
+                    class="ctrl-pad-btn h-14 sm:h-16 rounded-xl bg-slate-800/95 hover:bg-slate-700 border border-slate-600/80 text-white flex flex-col items-center justify-center shadow-lg">
+              <span class="text-xl sm:text-2xl leading-none font-black">◀</span>
+              <span class="text-[9px] sm:text-[10px] font-extrabold uppercase tracking-wider text-slate-300 mt-0.5">Left</span>
+            </button>
+            <button id="ctrlRightBtn" type="button" aria-label="Move Right in Crease"
+                    class="ctrl-pad-btn h-14 sm:h-16 rounded-xl bg-slate-800/95 hover:bg-slate-700 border border-slate-600/80 text-white flex flex-col items-center justify-center shadow-lg">
+              <span class="text-xl sm:text-2xl leading-none font-black">▶</span>
+              <span class="text-[9px] sm:text-[10px] font-extrabold uppercase tracking-wider text-slate-300 mt-0.5">Right</span>
+            </button>
+          </div>
+
+          <!-- Center: Loft / Ground Shot Toggle + Live Delivery Readout -->
+          <div class="col-span-3 flex flex-col items-stretch gap-1">
+            <button id="ctrlLoftBtn" type="button" onclick="cricketToggleLoft()"
+                    class="ctrl-pad-btn h-10 sm:h-11 rounded-xl bg-amber-500/95 hover:bg-amber-400 border border-amber-300 text-slate-950 font-black text-[11px] sm:text-xs flex items-center justify-center gap-1 shadow-md">
+              <span id="ctrlLoftIcon">🚀</span><span id="ctrlLoftLabel">LOFT</span>
+            </button>
+            <div id="ctrlDeliveryMini" class="text-center text-[9px] sm:text-[10px] font-bold text-slate-300 bg-slate-900/90 border border-white/10 rounded-md py-0.5 px-1 truncate">
+              ⚡ Ready
+            </div>
+          </div>
+
+          <!-- Right: Primary Big HIT / RUN Action Button -->
+          <div class="col-span-4">
+            <button id="ctrlActionBtn" type="button" aria-label="Hit Ball or Sprint Run"
+                    class="ctrl-pad-btn w-full h-14 sm:h-16 rounded-xl bg-gradient-to-b from-orange-500 to-orange-600 hover:from-orange-400 hover:to-orange-500 border-2 border-orange-300/80 text-white flex flex-col items-center justify-center shadow-lg shadow-orange-600/30">
+              <span id="ctrlActionMain" class="text-base sm:text-xl font-black tracking-wide leading-none">🏏 HIT</span>
+              <span id="ctrlActionSub" class="text-[9px] sm:text-[10px] font-bold uppercase tracking-wider text-orange-100 mt-0.5">Time Shot</span>
+            </button>
+          </div>
+        </div>
+      </div>
     </section>
 
     <!-- ==================== WEBSITE BELOW-THE-FOLD PORTAL SECTIONS ==================== -->
@@ -581,7 +729,7 @@
 
       <!-- FOOTER -->
       <footer class="border-t border-white/10 pt-6 pb-8 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-slate-500">
-        <div class="font-bold text-slate-400">🏏 PRO CRICKET CHASE · 60 FPS HTML5 Canvas Stadium Engine</div>
+        <div class="font-bold text-slate-400">🏏 CRICKET RUSH · 60 FPS HTML5 Canvas Stadium Engine</div>
         <div class="flex items-center gap-4">
           <a href="#arena" class="hover:text-white transition">Back to Pitch ↑</a>
           <button onclick="openWagonWheelModal()" class="hover:text-white transition">Wagon Wheel</button>
@@ -819,10 +967,13 @@
     const CRIC_BOT_STUMP_Y = 128;
 
     const CRIC_MODES = {
-      easy:   { targetRuns: 18, totalBalls: 12, startScore: 192, startOvers: 18, startWickets: 1, maxWickets: 10, label: "Easy Chase" },
-      pro:    { targetRuns: 30, totalBalls: 12, startScore: 180, startOvers: 18, startWickets: 1, maxWickets: 10, label: "Pro Chase" },
-      super:  { targetRuns: 16, totalBalls: 6,  startScore: 194, startOvers: 19, startWickets: 1, maxWickets: 10, label: "Super Over" },
-      custom: { targetRuns: 45, totalBalls: 18, startScore: 0,   startOvers: 0,  startWickets: 0, maxWickets: 5,  label: "Custom Chase" }
+      easy:   { targetRuns: 18,  totalBalls: 12, startScore: 192, startOvers: 18, startWickets: 1, maxWickets: 10, label: "Easy Chase" },
+      pro:    { targetRuns: 30,  totalBalls: 12, startScore: 180, startOvers: 18, startWickets: 1, maxWickets: 10, label: "Death Over" },
+      super:  { targetRuns: 16,  totalBalls: 6,  startScore: 0,   startOvers: 0,  startWickets: 0, maxWickets: 2,  label: "Super Over" },
+      five:   { targetRuns: 65,  totalBalls: 30, startScore: 0,   startOvers: 0,  startWickets: 0, maxWickets: 10, label: "5-Over Chase" },
+      ten:    { targetRuns: 135, totalBalls: 60, startScore: 0,   startOvers: 0,  startWickets: 0, maxWickets: 10, label: "10-Over Chase" },
+      nets:   { targetRuns: 9999, totalBalls: 9999, startScore: 0, startOvers: 0, startWickets: 0, maxWickets: 999, label: "Practice Nets", isNets: true },
+      custom: { targetRuns: 45,  totalBalls: 18, startScore: 0,   startOvers: 0,  startWickets: 0, maxWickets: 5,  label: "Custom Chase" }
     };
 
     const DIFFICULTY_LEVELS = {
@@ -1010,6 +1161,9 @@
       phase: "ready",
       phaseTimer: 0,
       currentDeliveryLabel: "Ready",
+      isFreeHit: false,
+      extraType: null, // null | 'wide' | 'noball'
+      timingMeterTimer: 0,
 
       // Camera
       camX: 0,
@@ -1055,7 +1209,7 @@
 
       // Visual Juice
       crowdCheerTimer: 0,
-      ledMessage: "PRO CRICKET T20",
+      ledMessage: "CRICKET RUSH T20",
       ledColor: "#38bdf8",
       teamKey: "JAJ",
       stadiumTheme: "night",
@@ -1072,12 +1226,69 @@
       // Input state
       keys: { left: false, right: false },
       touchStartX: null,
-      calloutTimer: 0
+      calloutTimer: 0,
+      deckVisible: true
     };
 
     /* =========================================================================
        5. ENGINE INIT, INPUTS & RESIZING
        ========================================================================= */
+    function bindHoldButton(btnId, dirKey) {
+      const btn = document.getElementById(btnId);
+      if (!btn) return;
+      const startHold = (e) => {
+        e.preventDefault();
+        cric.keys[dirKey] = true;
+        btn.classList.add("is-pressed", "border-orange-400", "bg-slate-700");
+      };
+      const endHold = (e) => {
+        if (e) e.preventDefault();
+        cric.keys[dirKey] = false;
+        btn.classList.remove("is-pressed", "border-orange-400", "bg-slate-700");
+      };
+      btn.addEventListener("pointerdown", startHold);
+      btn.addEventListener("pointerup", endHold);
+      btn.addEventListener("pointerleave", endHold);
+      btn.addEventListener("pointercancel", endHold);
+      btn.addEventListener("contextmenu", (e) => e.preventDefault());
+    }
+
+    function toggleControlDeck() {
+      cric.deckVisible = !cric.deckVisible;
+      const deck = document.getElementById("cricControlDeck");
+      const stage = document.getElementById("cricketStage");
+      const btn = document.getElementById("deckToggleBtn");
+      if (cric.deckVisible) {
+        deck.classList.remove("hidden");
+        stage.classList.remove("deck-hidden");
+        btn.className = "px-2 sm:px-3 py-1.5 rounded-lg sm:rounded-xl bg-emerald-500/20 hover:bg-emerald-500/30 border border-emerald-500/40 text-emerald-300 text-xs font-bold transition flex items-center gap-1";
+      } else {
+        deck.classList.add("hidden");
+        stage.classList.add("deck-hidden");
+        btn.className = "px-2 sm:px-3 py-1.5 rounded-lg sm:rounded-xl bg-slate-900 hover:bg-slate-800 border border-slate-700 text-slate-300 text-xs font-bold transition flex items-center gap-1";
+      }
+      setTimeout(cricketResizeCanvas, 30);
+    }
+
+    function updateActionControlButton() {
+      const btn = document.getElementById("ctrlActionBtn");
+      const main = document.getElementById("ctrlActionMain");
+      const sub = document.getElementById("ctrlActionSub");
+      if (!btn || !main || !sub) return;
+
+      if ((cric.phase === "inplay" || cric.phase === "returning") && !cric.ball.dead) {
+        btn.className = "ctrl-pad-btn w-full h-14 sm:h-16 rounded-xl bg-gradient-to-b from-emerald-500 to-emerald-600 hover:from-emerald-400 hover:to-emerald-500 border-2 border-emerald-300 text-slate-950 flex flex-col items-center justify-center shadow-lg shadow-emerald-600/35";
+        main.textContent = `🏃 RUN (${cric.runCountThisBall})`;
+        sub.className = "text-[9px] sm:text-[10px] font-extrabold uppercase tracking-wider text-emerald-950 mt-0.5";
+        sub.textContent = cric.runningActive ? "Sprinting..." : "Tap to Sprint";
+      } else {
+        btn.className = "ctrl-pad-btn w-full h-14 sm:h-16 rounded-xl bg-gradient-to-b from-orange-500 to-orange-600 hover:from-orange-400 hover:to-orange-500 border-2 border-orange-300/80 text-white flex flex-col items-center justify-center shadow-lg shadow-orange-600/30";
+        main.textContent = "🏏 HIT";
+        sub.className = "text-[9px] sm:text-[10px] font-bold uppercase tracking-wider text-orange-100 mt-0.5";
+        sub.textContent = cric.loftMode ? "Loft Swing" : "Ground Drive";
+      }
+    }
+
     function cricketInit() {
       cric.canvas = document.getElementById("cricketCanvas");
       cric.ctx = cric.canvas.getContext("2d");
@@ -1087,6 +1298,27 @@
       cric.fielders = CRIC_FIELD_HOME.map(p => ({
         homeX: p.x, homeY: p.y, x: p.x, y: p.y, speed: 178
       }));
+
+      // Bind On-Screen Control Deck Buttons
+      bindHoldButton("ctrlLeftBtn", "left");
+      bindHoldButton("ctrlRightBtn", "right");
+      const actBtn = document.getElementById("ctrlActionBtn");
+      if (actBtn) {
+        actBtn.addEventListener("pointerdown", (e) => {
+          e.preventDefault();
+          actBtn.classList.add("is-pressed");
+          cricketTriggerAction();
+        });
+        const releaseAct = () => actBtn.classList.remove("is-pressed");
+        actBtn.addEventListener("pointerup", releaseAct);
+        actBtn.addEventListener("pointerleave", releaseAct);
+        actBtn.addEventListener("pointercancel", releaseAct);
+        actBtn.addEventListener("contextmenu", (e) => e.preventDefault());
+      }
+      window.addEventListener("blur", () => {
+        cric.keys.left = false;
+        cric.keys.right = false;
+      });
 
       // Keyboard Controls
       window.addEventListener("keydown", (e) => {
@@ -1303,15 +1535,136 @@
       void el.offsetWidth;
     }
 
+    function showTimingMeter(normOffset, label, colorCls) {
+      const wrap = document.getElementById("cricTimingMeterWrap");
+      const needle = document.getElementById("cricTimingNeedle");
+      const lbl = document.getElementById("cricTimingMeterLabel");
+      if (!wrap || !needle || !lbl) return;
+      const pct = Math.max(4, Math.min(96, 50 + normOffset * 46));
+      needle.style.left = `${pct}%`;
+      lbl.textContent = label;
+      lbl.className = colorCls;
+      wrap.classList.remove("hidden");
+      cric.timingMeterTimer = 1.65;
+    }
+
+    function updateFreeHitUI() {
+      const el = document.getElementById("cricFreeHitBadge");
+      if (el) el.classList.toggle("hidden", !cric.isFreeHit);
+    }
+
+    function updateMatchCardUI() {
+      const cfg = CRIC_MODES[cric.mode] || CRIC_MODES.pro;
+      const teamTag = TEAM_PRESETS[cric.teamKey]?.tag || "JAJ";
+      const oppTag = teamTag === "MUM" ? "JAJ" : "MUM";
+      const teamsEl = document.getElementById("cricCardTeams");
+      const nameEl = document.getElementById("cricCardModeName");
+      const targetEl = document.getElementById("cricCardTarget");
+      const metaEl = document.getElementById("cricCardMeta");
+      const rrrEl = document.getElementById("cricCardRRR");
+      if (!teamsEl) return;
+
+      teamsEl.textContent = `${teamTag} vs ${oppTag}`;
+      nameEl.textContent = cfg.label;
+      if (cfg.isNets) {
+        targetEl.innerHTML = `Unlimited <span class="text-xs font-bold text-slate-400">practice</span>`;
+        metaEl.textContent = "Master every line & length";
+        rrrEl.textContent = "NETS MODE";
+      } else {
+        const wktsInHand = Math.max(1, (cfg.maxWickets ?? 10) - (cfg.startWickets ?? 0));
+        const rrr = ((cfg.targetRuns / cfg.totalBalls) * 6).toFixed(2);
+        targetEl.innerHTML = `${cfg.targetRuns} <span class="text-xs font-bold text-slate-400">to win</span>`;
+        metaEl.textContent = `${cfg.totalBalls} balls · ${wktsInHand} wkts`;
+        rrrEl.textContent = `RRR ${rrr}`;
+      }
+      renderLeaderboardUI();
+    }
+
+    const DEFAULT_LEADERBOARD = {
+      pro: [
+        { name: "Legitimate_Stage", won: true, ballsLeft: 5, sr: 428.6, score: "212/1" },
+        { name: "Specific_Challenge", won: true, ballsLeft: 4, sr: 387.5, score: "211/2" },
+        { name: "Dense_Recognition", won: true, ballsLeft: 3, sr: 355.6, score: "212/2" }
+      ],
+      super: [
+        { name: "SuperOverKing", won: true, ballsLeft: 2, sr: 450.0, score: "18/0" },
+        { name: "SixHitter99", won: true, ballsLeft: 1, sr: 340.0, score: "17/1" }
+      ],
+      five: [
+        { name: "ChaseMaster", won: true, ballsLeft: 9, sr: 314.3, score: "66/2" },
+        { name: "CoverDrivePro", won: true, ballsLeft: 5, sr: 264.0, score: "66/3" }
+      ],
+      ten: [
+        { name: "CenturyMaker", won: true, ballsLeft: 14, sr: 295.7, score: "136/3" },
+        { name: "T20Finisher", won: true, ballsLeft: 8, sr: 261.5, score: "136/4" }
+      ]
+    };
+
+    function getLeaderboardForMode(mode) {
+      let all = {};
+      try {
+        const raw = localStorage.getItem("cricket_rush_lb_v1");
+        if (raw) all = JSON.parse(raw);
+      } catch (e) {}
+      const key = DEFAULT_LEADERBOARD[mode] ? mode : "pro";
+      const list = all[key] ? [...all[key]] : [...DEFAULT_LEADERBOARD[key]];
+      list.sort((a, b) => (b.ballsLeft - a.ballsLeft) || (b.sr - a.sr));
+      return list.slice(0, 4);
+    }
+
+    function recordLeaderboardWin(mode, ballsLeft, runs, ballsFaced, finalScoreStr) {
+      if (mode === "nets" || mode === "custom") return;
+      const key = DEFAULT_LEADERBOARD[mode] ? mode : "pro";
+      let all = {};
+      try {
+        const raw = localStorage.getItem("cricket_rush_lb_v1");
+        if (raw) all = JSON.parse(raw);
+      } catch (e) {}
+      const list = all[key] ? [...all[key]] : [...DEFAULT_LEADERBOARD[key]];
+      const sr = ballsFaced > 0 ? Number(((runs / ballsFaced) * 100).toFixed(1)) : 0;
+      list.push({
+        name: `${duel.playerName || "You"} (You)`,
+        won: true,
+        ballsLeft,
+        sr,
+        score: finalScoreStr
+      });
+      list.sort((a, b) => (b.ballsLeft - a.ballsLeft) || (b.sr - a.sr));
+      all[key] = list.slice(0, 6);
+      try { localStorage.setItem("cricket_rush_lb_v1", JSON.stringify(all)); } catch (e) {}
+    }
+
+    function renderLeaderboardUI() {
+      const rowsEl = document.getElementById("cricLbRows");
+      const tagEl = document.getElementById("cricLbModeTag");
+      if (!rowsEl || !tagEl) return;
+      const cfg = CRIC_MODES[cric.mode] || CRIC_MODES.pro;
+      tagEl.textContent = cfg.label;
+      const list = getLeaderboardForMode(cric.mode);
+      rowsEl.innerHTML = list.map((item, idx) => `
+        <div class="flex items-center justify-between px-2.5 py-1.5 rounded-lg ${idx === 0 ? "bg-amber-500/15 border border-amber-400/30" : "bg-slate-900/80 border border-white/5"}">
+          <div class="flex items-center gap-2 truncate">
+            <span class="font-black ${idx === 0 ? "text-amber-300" : "text-slate-400"}">#${idx + 1}</span>
+            <span class="font-bold text-slate-100 truncate">${item.name}</span>
+          </div>
+          <div class="flex items-center gap-2 shrink-0 text-[11px]">
+            <span class="text-emerald-400 font-bold">Won · ${item.ballsLeft}b left</span>
+            <span class="text-slate-400 font-mono hidden sm:inline">SR ${item.sr}</span>
+          </div>
+        </div>
+      `).join("");
+    }
+
     function cricketSetMode(mode) {
+      if (!CRIC_MODES[mode]) mode = "pro";
       cric.mode = mode;
-      ["easy", "pro", "super", "custom"].forEach(m => {
+      ["pro", "super", "five", "ten", "nets", "custom"].forEach(m => {
         const el = document.getElementById("cricMode" + m.charAt(0).toUpperCase() + m.slice(1));
         if (!el) return;
         if (m === mode) {
-          el.className = "py-2 px-2 rounded-xl border text-xs font-bold transition bg-orange-500/20 border-orange-500 text-orange-300";
+          el.className = "py-2 px-1.5 rounded-xl border text-xs font-bold transition bg-orange-500/20 border-orange-500 text-orange-300";
         } else {
-          el.className = "py-2 px-2 rounded-xl border text-xs font-bold transition bg-slate-900 border-slate-700 text-slate-300";
+          el.className = "py-2 px-1.5 rounded-xl border text-xs font-bold transition bg-slate-900 border-slate-700 text-slate-300 hover:border-slate-500";
         }
       });
 
@@ -1325,6 +1678,50 @@
         }
       }
       cricketResetMatchState(false);
+      updateMatchCardUI();
+    }
+
+    function cricketUpdateCustomConfig(clampValues = false, resetMatch = true) {
+      const rEl = document.getElementById("customRunsInput");
+      const bEl = document.getElementById("customBallsInput");
+      const wEl = document.getElementById("customWicketsInput");
+      if (!rEl || !bEl || !wEl) return;
+
+      let runs = parseInt(rEl.value, 10);
+      let balls = parseInt(bEl.value, 10);
+      let wkts = parseInt(wEl.value, 10);
+
+      if (isNaN(runs)) runs = 45;
+      if (isNaN(balls)) balls = 18;
+      if (isNaN(wkts)) wkts = 5;
+
+      runs = Math.max(1, Math.min(500, runs));
+      balls = Math.max(1, Math.min(120, balls));
+      wkts = Math.max(1, Math.min(10, wkts));
+
+      if (clampValues) {
+        rEl.value = runs;
+        bEl.value = balls;
+        wEl.value = wkts;
+      }
+
+      CRIC_MODES.custom.targetRuns = runs;
+      CRIC_MODES.custom.totalBalls = balls;
+      CRIC_MODES.custom.maxWickets = wkts;
+
+      const subEl = document.getElementById("cricCustomSub");
+      if (subEl) subEl.textContent = `${runs} off ${balls}`;
+
+      const rrrPrev = document.getElementById("cricCustomRRRPreview");
+      if (rrrPrev) {
+        const rrr = ((runs / balls) * 6).toFixed(2);
+        rrrPrev.textContent = `RRR ${rrr} · ${wkts} wkt${wkts === 1 ? "" : "s"}`;
+      }
+
+      if (resetMatch && cric.mode === "custom") {
+        cricketResetMatchState(false);
+      }
+      updateMatchCardUI();
     }
 
     function cricketSetDifficulty(diffKey, savePref = true) {
@@ -1379,8 +1776,10 @@
       cric.overHistory = [];
       cric.consecutiveDots = 0;
       cric.matchOver = false;
+      cric.isFreeHit = false;
+      cric.extraType = null;
       cric.crowdCheerTimer = 0;
-      cric.ledMessage = "PRO CRICKET T20";
+      cric.ledMessage = "CRICKET RUSH T20";
       cric.ledColor = TEAM_PRESETS[cric.teamKey]?.led || "#38bdf8";
       cric.particles = [];
       cric.fireworks = [];
@@ -1388,8 +1787,7 @@
       cric.flyingBails = [];
       cric.wagonShots = [];
       cric.stumpsBroken = false;
-
-      if (cric.mode === "custom") {
+      if (cric.mode === "custom" || cric.mode === "super" || cric.mode === "five" || cric.mode === "ten" || cric.mode === "nets") {
         cric.striker = { name: "R. Bhende", runs: 0, balls: 0 };
         cric.nonStriker = { name: "D. Jhalani", runs: 0, balls: 0 };
       } else {
@@ -1398,8 +1796,10 @@
       }
       cric.bowler = { name: "Z. Mirzapuri", runs: 0, wickets: 0, balls: 0 };
 
+      updateFreeHitUI();
       cricketSetupNextBall();
       cricketUpdateHUD();
+      updateMatchCardUI();
     }
 
     function cricketStartMatch(fromDuel = false) {
@@ -1445,13 +1845,24 @@
       cric.loftMode = !cric.loftMode;
       const btn = document.getElementById("cricLoftBtn");
       const txt = document.getElementById("cricLoftText");
+      const cBtn = document.getElementById("ctrlLoftBtn");
+      const cIcon = document.getElementById("ctrlLoftIcon");
+      const cLabel = document.getElementById("ctrlLoftLabel");
+
       if (cric.loftMode) {
-        btn.className = "px-2.5 sm:px-3 h-9 sm:h-10 rounded-full bg-amber-500/90 hover:bg-amber-400 border border-amber-300 text-slate-950 font-black text-[11px] sm:text-xs shadow-lg transition flex items-center gap-1";
-        txt.textContent = "LOFT";
+        if (btn) btn.className = "hidden sm:flex px-3 h-10 rounded-full bg-amber-500/90 hover:bg-amber-400 border border-amber-300 text-slate-950 font-black text-xs shadow-lg transition items-center gap-1";
+        if (txt) txt.textContent = "LOFT";
+        if (cBtn) cBtn.className = "ctrl-pad-btn h-10 sm:h-11 rounded-xl bg-amber-500/95 hover:bg-amber-400 border border-amber-300 text-slate-950 font-black text-[11px] sm:text-xs flex items-center justify-center gap-1 shadow-md";
+        if (cIcon) cIcon.textContent = "🚀";
+        if (cLabel) cLabel.textContent = "LOFT";
       } else {
-        btn.className = "px-2.5 sm:px-3 h-9 sm:h-10 rounded-full bg-sky-500/90 hover:bg-sky-400 border border-sky-300 text-slate-950 font-black text-[11px] sm:text-xs shadow-lg transition flex items-center gap-1";
-        txt.textContent = "GROUND";
+        if (btn) btn.className = "hidden sm:flex px-3 h-10 rounded-full bg-sky-500/90 hover:bg-sky-400 border border-sky-300 text-slate-950 font-black text-xs shadow-lg transition items-center gap-1";
+        if (txt) txt.textContent = "GROUND";
+        if (cBtn) cBtn.className = "ctrl-pad-btn h-10 sm:h-11 rounded-xl bg-sky-500/95 hover:bg-sky-400 border border-sky-300 text-slate-950 font-black text-[11px] sm:text-xs flex items-center justify-center gap-1 shadow-md";
+        if (cIcon) cIcon.textContent = "⚡";
+        if (cLabel) cLabel.textContent = "GROUND";
       }
+      updateActionControlButton();
     }
 
     function cricketShowCallout(bigText, subText, bigColor = "#facc15", borderColor = "#facc15", duration = 1.7) {
@@ -1489,11 +1900,23 @@
       const pace = (dType.paceMin + rng() * (dType.paceMax - dType.paceMin)) * diff.paceMult;
       const kmh = Math.round((dType.kmhBase + (rng() - 0.5) * 8) * Math.min(1.06, Math.max(0.88, diff.paceMult)));
       const bounceY = dType.bounceMin + rng() * (dType.bounceMax - dType.bounceMin);
-      const targetX = (rng() - 0.5) * 34;
 
-      cric.currentDeliveryLabel = `${dType.name} · ${kmh} km/h`;
+      // Authentic Cricket Rush occasional Wide (5%) or No-Ball (4%)
+      cric.extraType = null;
+      let targetX = (rng() - 0.5) * 34;
+      const extraRoll = rng();
+      if (extraRoll < 0.05) {
+        cric.extraType = "wide";
+        targetX = (rng() < 0.5 ? -1 : 1) * (35 + rng() * 6);
+      } else if (extraRoll < 0.09) {
+        cric.extraType = "noball";
+      }
+
+      cric.currentDeliveryLabel = `${dType.name} · ${kmh} km/h${cric.isFreeHit ? " · FREE HIT" : ""}`;
       const tag = document.getElementById("cricDeliveryTag");
       if (tag) tag.textContent = `⚡ ${cric.currentDeliveryLabel}`;
+      const mini = document.getElementById("ctrlDeliveryMini");
+      if (mini) mini.textContent = cric.isFreeHit ? `🔥 FREE HIT` : `⚡ ${dType.name} ${kmh}`;
 
       cric.ball = {
         x: cric.bowlerX, y: cric.bowlerY + 12, z: 18,
@@ -1519,6 +1942,8 @@
       });
 
       document.getElementById("cricRunWidget").classList.add("hidden");
+      updateFreeHitUI();
+      updateActionControlButton();
     }
 
     function cricketTriggerAction() {
@@ -1535,15 +1960,16 @@
         const maxDx = diff.maxDx;
         const dy = cric.ball.y - idealY; // negative = early, positive = late
         const dx = Math.abs(cric.ball.x - cric.batX);
+        const normOffset = Math.max(-1, Math.min(1, dy / maxDy));
 
         if (Math.abs(dy) < maxDy && dx < maxDx) {
           const timingQuality = 1 - Math.abs(dy) / maxDy;
           const alignQuality = 1 - dx / maxDx;
-          const rawSweetSpot = timingQuality * 0.65 + alignQuality * 0.35;
+          const rawSweetSpot = timingQuality * 0.68 + alignQuality * 0.32;
 
           // Delivery difficulty penalty scaled by selected difficulty
           let difficultyPenalty = 0;
-          if (cric.ball.bounceY > 74) difficultyPenalty = (cric.loftMode ? 0.08 : 0.02) * diff.penaltyMult;
+          if (cric.ball.bounceY > 74) difficultyPenalty = (cric.loftMode ? 0.07 : 0.02) * diff.penaltyMult;
           else if (cric.ball.bounceY < 20) difficultyPenalty = (cric.loftMode ? 0.05 : 0.02) * diff.penaltyMult;
           else if (cric.ball.spinTurn !== 0) difficultyPenalty = (cric.loftMode ? 0.04 : 0.015) * diff.penaltyMult;
 
@@ -1553,9 +1979,11 @@
           cric.phase = "inplay";
           cric.ball.trail = [];
 
-          const timingAngleOffset = (dy / maxDy) * 1.18;
-          const stanceOffset = -(cric.batX / 28) * 0.48;
-          const shotAngle = -Math.PI / 2 - timingAngleOffset + stanceOffset + (Math.random() - 0.5) * 0.1;
+          // Cricket Rush Shot Direction:
+          // Early -> Leg-side pull/whip | Perfect -> Straight/V-zone | Late -> Straight Drive / Off-side cut
+          const timingAngleOffset = (dy / maxDy) * 1.12;
+          const stanceOffset = -(cric.batX / 28) * 0.44;
+          const shotAngle = -Math.PI / 2 - timingAngleOffset + stanceOffset + (Math.random() - 0.5) * 0.09;
           cric.ball.shotAngle = shotAngle;
 
           let speed = 180;
@@ -1563,53 +1991,57 @@
           let ballGoesInAir = cric.loftMode;
 
           if (sweetSpot >= diff.sweetThresh) {
-            // Middle-of-the-bat connection: clears the ropes on loft or rockets along the carpet
+            // PERFECT timing: middle of the bat!
             const perf = Math.min(1, (sweetSpot - diff.sweetThresh) / Math.max(0.08, 1 - diff.sweetThresh));
             speed = cric.loftMode
-              ? (470 + diff.loftSpeedBonus + perf * 115 + (Math.random() - 0.5) * 24)
-              : (450 + diff.loftSpeedBonus * 0.5 + perf * 110 + (Math.random() - 0.5) * 20);
+              ? (475 + diff.loftSpeedBonus + perf * 115 + (Math.random() - 0.5) * 20)
+              : (465 + diff.loftSpeedBonus * 0.5 + perf * 110 + (Math.random() - 0.5) * 18);
             loftVz = cric.loftMode
-              ? (205 + diff.loftVzBonus + perf * 48 + (Math.random() - 0.5) * 14)
+              ? (208 + diff.loftVzBonus + perf * 48 + (Math.random() - 0.5) * 12)
               : 0;
             ballGoesInAir = cric.loftMode;
             cricAudio.playBatCrack(1.3);
             cric.shakeTimer = 0.16;
             cric.shakeIntensity = 4;
             cric.slowMoTimer = 0.14;
-            showTimingBadge(cric.loftMode ? "⚡ SWEET SPOT!" : "⚡ CRACKING DRIVE!", "bg-emerald-500/20 border-emerald-400 text-emerald-300");
+            showTimingBadge(cric.loftMode ? "⚡ PERFECT LOFT!" : "⚡ STRAIGHT BULLET!", "bg-emerald-500/20 border-emerald-400 text-emerald-300");
+            showTimingMeter(normOffset, "PERFECT!", "text-emerald-400");
             spawnParticles(cric.ball.x, cric.ball.y, 16, ["#facc15", "#ffffff", "#34d399"], [70, 190], 0.55);
           } else if (sweetSpot >= diff.midThresh) {
-            // Solid contact: deep hit on loft (can drop safe or clear on easier modes), crisp carpet drive on ground
+            // EARLY or LATE timing: finds gaps for boundaries & 2s
             const mid = (sweetSpot - diff.midThresh) / Math.max(0.1, diff.sweetThresh - diff.midThresh);
             speed = cric.loftMode
-              ? (305 + diff.loftSpeedBonus * 0.8 + mid * 125 + (Math.random() - 0.5) * 24)
-              : (310 + mid * 120 + (Math.random() - 0.5) * 20);
+              ? (315 + diff.loftSpeedBonus * 0.8 + mid * 125 + (Math.random() - 0.5) * 22)
+              : (320 + mid * 125 + (Math.random() - 0.5) * 18);
             loftVz = cric.loftMode
-              ? (150 + diff.loftVzBonus * 0.7 + Math.random() * 48)
+              ? (152 + diff.loftVzBonus * 0.7 + Math.random() * 44)
               : 0;
             ballGoesInAir = cric.loftMode;
             cricAudio.playBatCrack(0.85);
-            showTimingBadge(
-              cric.loftMode ? (dy < 0 ? "EARLY LOFT" : "LATE LOFT") : (dy < 0 ? "EARLY DRIVE" : "LATE DRIVE"),
-              "bg-amber-500/20 border-amber-400 text-amber-300"
-            );
+            const tLbl = dy < 0 ? "EARLY · LEG SIDE" : "LATE · STRAIGHT / OFF";
+            showTimingBadge(tLbl, "bg-amber-500/20 border-amber-400 text-amber-300");
+            showTimingMeter(normOffset, dy < 0 ? "EARLY" : "LATE", "text-amber-400");
             spawnParticles(cric.ball.x, cric.ball.y, 8, ["#fde047", "#ffffff"], [40, 120], 0.4);
           } else if (sweetSpot >= diff.edgeThresh) {
-            // Mistimed loft pops up; grounded stays safely along the turf for singles
-            speed = cric.loftMode ? (155 + diff.loftSpeedBonus * 0.5 + Math.random() * 95) : (175 + Math.random() * 95);
-            loftVz = cric.loftMode ? (175 + Math.random() * 55) : 0;
+            // TOO EARLY -> Top Edge (catch danger) | TOO LATE -> Late Edge / Soft Hands
+            const isTooEarly = dy < 0;
+            speed = cric.loftMode ? (155 + diff.loftSpeedBonus * 0.5 + Math.random() * 90) : (175 + Math.random() * 95);
+            loftVz = cric.loftMode ? (178 + Math.random() * 52) : 0;
             ballGoesInAir = cric.loftMode;
             cricAudio.playBatCrack(0.5);
             showTimingBadge(
-              cric.loftMode ? "⚠️ TOP EDGE!" : "SOFT HANDS",
-              cric.loftMode ? "bg-orange-500/20 border-orange-400 text-orange-300" : "bg-sky-500/20 border-sky-400 text-sky-300"
+              isTooEarly ? "⚠️ TOO EARLY · TOP EDGE!" : "⚠️ TOO LATE · EDGED!",
+              "bg-orange-500/20 border-orange-400 text-orange-300"
             );
+            showTimingMeter(normOffset, isTooEarly ? "TOO EARLY" : "TOO LATE", "text-orange-400");
           } else {
-            speed = 90 + Math.random() * 80;
-            loftVz = cric.loftMode ? (135 + Math.random() * 55) : (cric.difficulty === "veryHard" || cric.difficulty === "hard" ? 52 : 0);
+            const isTooEarly = dy < 0;
+            speed = 92 + Math.random() * 78;
+            loftVz = cric.loftMode ? (140 + Math.random() * 55) : (cric.difficulty === "veryHard" || cric.difficulty === "hard" ? 52 : 0);
             ballGoesInAir = loftVz > 20;
             cricAudio.playBatCrack(0.32);
-            showTimingBadge("MISTIMED EDGE!", "bg-red-500/20 border-red-400 text-red-300");
+            showTimingBadge(isTooEarly ? "SKYED EDGE!" : "OUTSIDE EDGE!", "bg-red-500/20 border-red-400 text-red-300");
+            showTimingMeter(normOffset, isTooEarly ? "WAY EARLY" : "WAY LATE", "text-red-400");
           }
 
           cric.ball.vx = Math.cos(shotAngle) * speed;
@@ -1620,9 +2052,12 @@
 
           document.getElementById("cricRunWidget").classList.remove("hidden");
           document.getElementById("cricBallRunsNum").textContent = "0";
+          updateActionControlButton();
         } else {
           cricAudio.playTone(175, "sine", 0.08, 0.08, 105);
-          showTimingBadge(dy < -maxDy ? "TOO EARLY" : "MISSED", "bg-slate-800/90 border-slate-600 text-slate-300");
+          const isEarly = dy < -maxDy;
+          showTimingBadge(isEarly ? "TOO EARLY · MISSED" : "TOO LATE · MISSED", "bg-slate-800/90 border-slate-600 text-slate-300");
+          showTimingMeter(isEarly ? -1 : 1, isEarly ? "TOO EARLY" : "MISSED", "text-red-400");
         }
       }
       // 2. Sprint runs between wickets
@@ -1630,24 +2065,56 @@
         cric.runningActive = true;
         cric.runProgress = 0;
         cric.runnerDir = (cric.runCountThisBall % 2 === 0) ? 1 : -1;
+        updateActionControlButton();
       }
     }
 
     function cricketConcludeBall(runs, isWicket, wicketType = "", shotMeters = 0) {
       if (cric.phase === "between") return;
       cric.phase = "between";
-      cric.phaseTimer = 1.75;
+      cric.phaseTimer = 1.65;
       cric.ball.dead = true;
       cric.runningActive = false;
       document.getElementById("cricRunWidget").classList.add("hidden");
+      updateActionControlButton();
 
-      cric.ballsBowled++;
-      cric.bowler.balls++;
-      cric.striker.balls++;
+      const wasFreeHit = cric.isFreeHit;
+      const isNoBall = cric.extraType === "noball";
+      const isWide = cric.extraType === "wide" && !cric.ball.hit;
 
-      let eventSummary = `${runs} run${runs === 1 ? "" : "s"}`;
+      // On Free Hit or No-Ball, only Run Out counts as out!
+      if (isWicket && (wasFreeHit || isNoBall) && wicketType !== "Run Out!") {
+        isWicket = false;
+        showTimingBadge("⚡ FREE HIT SAFE!", "bg-fuchsia-500/25 border-fuchsia-400 text-fuchsia-200");
+        setCommentary(`🎙️ NOT OUT! ${isNoBall ? "No-Ball" : "Free Hit"} saves the batter!`);
+      }
 
-      if (isWicket) {
+      // Extras handling (Wide / No-Ball do NOT count as a legal delivery!)
+      const extraRun = (isWide || isNoBall) ? 1 : 0;
+      const totalBallRuns = runs + extraRun;
+
+      if (!isWide && !isNoBall) {
+        cric.ballsBowled++;
+        cric.bowler.balls++;
+        cric.striker.balls++;
+        cric.isFreeHit = false;
+      } else if (isNoBall) {
+        cric.isFreeHit = true;
+      }
+
+      updateFreeHitUI();
+      let eventSummary = `${totalBallRuns} run${totalBallRuns === 1 ? "" : "s"}`;
+
+      if (isWide) {
+        cric.score += 1;
+        cric.runsScoredThisMatch += 1;
+        cric.bowler.runs += 1;
+        cric.overHistory.push("WD");
+        cricAudio.playRunComplete();
+        eventSummary = "WIDE (+1)";
+        cricketShowCallout("WIDE!", "+1 EXTRA · RE-BOWL", "#a855f7", "#a855f7", 1.5);
+        setCommentary(`🎙️ WIDE BALL! Down the leg/off side — 1 bonus run and an extra ball!`);
+      } else if (isWicket) {
         cric.wickets++;
         cric.bowler.wickets++;
         cric.consecutiveDots = 0;
@@ -1665,11 +2132,11 @@
         const nextName = nextNames[nameIdx] || "Tailender";
         cric.striker = { name: nextName, runs: 0, balls: 0 };
       } else {
-        cric.score += runs;
-        cric.runsScoredThisMatch += runs;
+        cric.score += totalBallRuns;
+        cric.runsScoredThisMatch += totalBallRuns;
         cric.striker.runs += runs;
-        cric.bowler.runs += runs;
-        cric.overHistory.push(runs === 0 ? "•" : String(runs));
+        cric.bowler.runs += totalBallRuns;
+        cric.overHistory.push(isNoBall ? `NB${runs > 0 ? "+" + runs : ""}` : (runs === 0 ? "•" : String(runs)));
 
         if (runs > 0) {
           cric.wagonShots.push({
@@ -1679,7 +2146,11 @@
           });
         }
 
-        if (runs === 0) {
+        if (isNoBall) {
+          cricAudio.playBoundary(false);
+          cricketShowCallout("NO BALL!", `+${totalBallRuns} · FREE HIT NEXT`, "#e879f9", "#e879f9", 1.9);
+          setCommentary(`🎙️ OVERSTEPPED! No-Ball called! +${totalBallRuns} run${totalBallRuns > 1 ? "s" : ""} and a FREE HIT coming up!`);
+        } else if (runs === 0) {
           cric.consecutiveDots++;
           cricAudio.playDot();
           eventSummary = "Dot ball";
@@ -1728,7 +2199,7 @@
         }
       }
 
-      if (cric.ballsBowled % 6 === 0 && cric.ballsBowled < cric.totalBalls) {
+      if (!isWide && !isNoBall && cric.ballsBowled % 6 === 0 && cric.ballsBowled < cric.totalBalls) {
         const tmp = cric.striker;
         cric.striker = cric.nonStriker;
         cric.nonStriker = tmp;
@@ -1736,6 +2207,8 @@
 
       cricketUpdateHUD();
       sendDuelProgress(eventSummary);
+
+      if (CRIC_MODES[cric.mode]?.isNets) return;
 
       const needed = cric.targetScore - cric.score;
       const ballsLeft = cric.totalBalls - cric.ballsBowled;
@@ -1755,6 +2228,8 @@
       }
       if (won) {
         careerStats.wins++;
+        const ballsLeft = Math.max(0, cric.totalBalls - cric.ballsBowled);
+        recordLeaderboardWin(cric.mode, ballsLeft, cric.runsScoredThisMatch, cric.ballsBowled, `${cric.score}/${cric.wickets}`);
         cric.crowdCheerTimer = 4.0;
         cricAudio.playBoundary(true);
         spawnStadiumFireworks(8);
@@ -1780,8 +2255,9 @@
           </div>`;
         }
 
+        const sr = cric.ballsBowled > 0 ? ((cric.runsScoredThisMatch / cric.ballsBowled) * 100).toFixed(1) : "0.0";
         document.getElementById("cricModalText").innerHTML =
-          `<b>${summary}</b><br/><span class="text-slate-400">Final Score:</span> <b class="text-white">${tag} ${cric.score}-${cric.wickets}</b> (+${cric.runsScoredThisMatch} runs in ${cric.ballsBowled} balls)${extraDuelHtml}`;
+          `<b>${summary}</b><br/><span class="text-slate-400">Final Score:</span> <b class="text-white">${tag} ${cric.score}-${cric.wickets}</b> (+${cric.runsScoredThisMatch} off ${cric.ballsBowled} · SR ${sr})${extraDuelHtml}`;
         document.getElementById("cricModePicker").classList.remove("hidden");
         document.getElementById("cricDifficultyPicker").classList.remove("hidden");
         if (cric.mode === "custom") {
@@ -1789,7 +2265,8 @@
         } else {
           document.getElementById("cricCustomPanel").classList.add("hidden");
         }
-        document.getElementById("cricModalBtn").textContent = "Play Again";
+        document.getElementById("cricModalBtn").textContent = "▶ Play Again";
+        renderLeaderboardUI();
         modal.classList.remove("hidden");
       }, 1250);
     }
@@ -1797,6 +2274,7 @@
     function cricketUpdateHUD() {
       const completedOvers = cric.startOvers + Math.floor(cric.ballsBowled / 6);
       const ballsInOver = cric.ballsBowled % 6;
+      const isNets = CRIC_MODES[cric.mode]?.isNets;
       const needed = Math.max(0, cric.targetScore - cric.score);
       const ballsLeft = Math.max(0, cric.totalBalls - cric.ballsBowled);
       const wktsLeft = Math.max(0, cric.maxWickets - cric.wickets);
@@ -1804,19 +2282,21 @@
 
       document.getElementById("cricScore").textContent = `${cric.score}-${cric.wickets}`;
       document.getElementById("cricOvers").innerHTML = `${completedOvers}.${ballsInOver} <span class="text-[10px] text-slate-400">OV</span>`;
-      document.getElementById("cricTargetText").innerHTML =
-        needed <= 0
+      document.getElementById("cricTargetText").innerHTML = isNets
+        ? `<span class="text-emerald-400 font-black">🏏 NETS PRACTICE</span>`
+        : (needed <= 0
           ? `<span class="text-emerald-400 font-black">TARGET CHASED!</span>`
-          : `Need <span class="text-red-400 font-black">${needed}</span> off ${ballsLeft}${cric.mode === "custom" ? ` <span class="text-slate-400 font-semibold">(${wktsLeft}w)</span>` : ""}`;
-      document.getElementById("cricRRR").textContent = `RRR ${rrr}`;
+          : `Need <span class="text-red-400 font-black">${needed}</span> off ${ballsLeft}${cric.mode === "custom" ? ` <span class="text-slate-400 font-semibold">(${wktsLeft}w)</span>` : ""}`);
+      document.getElementById("cricRRR").textContent = isNets
+        ? `SR ${cric.ballsBowled > 0 ? Math.round((cric.runsScoredThisMatch / cric.ballsBowled) * 100) : 0}`
+        : `RRR ${rrr}`;
       document.getElementById("cricStriker").textContent = `${cric.striker.name} ${cric.striker.runs} (${cric.striker.balls})`;
       document.getElementById("cricNonStriker").textContent = `${cric.nonStriker.name} ${cric.nonStriker.runs} (${cric.nonStriker.balls})`;
 
       const bOv = `${Math.floor(cric.bowler.balls / 6)}.${cric.bowler.balls % 6}`;
       document.getElementById("cricBowler").textContent = `${cric.bowler.name} ${cric.bowler.wickets}-${cric.bowler.runs} (${bOv})`;
 
-      const currentOverStart = Math.floor((Math.max(0, cric.overHistory.length - 1)) / 6) * 6;
-      const slice = cric.overHistory.slice(currentOverStart, currentOverStart + 6);
+      const slice = cric.overHistory.slice(-6);
       const container = document.getElementById("cricOverBalls");
       container.innerHTML = Array.from({ length: 6 }, (_, i) => {
         const val = slice[i];
@@ -1827,6 +2307,7 @@
         if (val === "6") cls = "bg-amber-400 border-amber-300 text-slate-950 font-black";
         else if (val === "4") cls = "bg-sky-500 border-sky-300 text-slate-950 font-black";
         else if (val === "W") cls = "bg-red-600 border-red-400 text-white font-black";
+        else if (val === "WD" || val.startsWith("NB")) cls = "bg-fuchsia-500 border-fuchsia-300 text-slate-950 font-black text-[8px]";
         return `<span class="w-5 h-5 rounded-full border ${cls} inline-flex items-center justify-center text-[10px] font-bold">${val}</span>`;
       }).join("");
     }
@@ -1865,6 +2346,12 @@
         cric.calloutTimer -= rawDt;
         if (cric.calloutTimer <= 0) {
           document.getElementById("cricCalloutBox").classList.add("hidden");
+        }
+      }
+      if (cric.timingMeterTimer > 0) {
+        cric.timingMeterTimer -= rawDt;
+        if (cric.timingMeterTimer <= 0) {
+          document.getElementById("cricTimingMeterWrap").classList.add("hidden");
         }
       }
 
@@ -1909,11 +2396,17 @@
       }
 
       // Phase State Machine
+      const isPortrait = cric.viewH > cric.viewW * 1.05;
+      const battingZoom = isPortrait
+        ? Math.min(cric.viewW / 245, cric.viewH / 415)
+        : Math.min(cric.viewW, cric.viewH) / 365;
+      const battingCamY = isPortrait ? -16 : 0;
+
       if (cric.phase === "ready") {
         cric.phaseTimer -= dt;
         cric.targetCamX = 0;
-        cric.targetCamY = 0;
-        cric.targetCamZoom = Math.min(cric.viewW, cric.viewH) / 365;
+        cric.targetCamY = battingCamY;
+        cric.targetCamZoom = battingZoom;
         if (cric.phaseTimer <= 0) {
           cric.phase = "runup";
         }
@@ -1950,19 +2443,23 @@
           cric.bounceRipples.push({ x: b.x, y: b.y, r: 3, life: 0.55, maxLife: 0.55, color: b.spinTurn !== 0 ? "#c084fc" : "#fef08a" });
           spawnParticles(b.x, b.y, 7, ["#e5d3a1", "#b89f63"], [25, 65], 0.35);
         } else {
-          b.vz -= 285 * dt;
+          b.vz -= 280 * dt;
           b.z = Math.max(2, b.z + b.vz * dt);
         }
 
-        // Check BOWLED
+        // Check BOWLED (skip if Free Hit or No-Ball!)
         if (b.y >= CRIC_BOT_STUMP_Y - 2 && Math.abs(b.x) < 12 && b.z < 21) {
+          if (cric.isFreeHit || cric.extraType === "noball") {
+            cricketConcludeBall(0, false);
+            return;
+          }
           cric.stumpsBroken = "bot";
           spawnFlyingBails(CRIC_BOT_STUMP_Y);
           spawnParticles(0, CRIC_BOT_STUMP_Y, 18, ["#ffffff", "#ef4444", "#fde047"], [60, 180], 0.7);
           cricketConcludeBall(0, true, "Bowled!");
           return;
         }
-        // Passed keeper -> Dot ball
+        // Passed keeper -> Dot ball (or Wide!)
         if (b.y >= CRIC_BOT_STUMP_Y + 48) {
           cricketConcludeBall(0, false);
           return;
@@ -2002,7 +2499,9 @@
 
         cric.targetCamX = b.x * 0.62;
         cric.targetCamY = b.y * 0.62;
-        cric.targetCamZoom = Math.min(cric.viewW, cric.viewH) / 690;
+        cric.targetCamZoom = isPortrait
+          ? Math.min(cric.viewW / 540, cric.viewH / 760)
+          : Math.min(cric.viewW, cric.viewH) / 690;
 
         // Check Boundary (4 or 6)
         const distFromCenter = Math.hypot(b.x, b.y);
@@ -2054,20 +2553,31 @@
           if (idx === nearestIdx && ballDist < catchReach) {
             if (b.inAir && !b.catchAttempted && b.z > 4 && b.z < diff.catchMaxZ && (b.vz < 55 || b.z < 24)) {
               b.catchAttempted = true;
-              if (Math.random() <= diff.catchChance) {
+              if (!cric.isFreeHit && cric.extraType !== "noball" && Math.random() <= diff.catchChance) {
                 cricketConcludeBall(0, true, "Caught!");
                 return;
               } else {
-                // Dropped catch / falls just short — ball hits turf safely!
+                // Dropped catch / Free Hit survival — ball hits turf safely!
                 b.inAir = false;
                 b.z = 0;
                 b.vz = 0;
                 b.vx *= 0.35;
                 b.vy *= 0.35;
-                showTimingBadge("DROPPED! RUN!", "bg-emerald-500/20 border-emerald-400 text-emerald-300");
-                setCommentary("🎙️ OH! Put down in the outfield! Safe — sprint for runs!");
+                showTimingBadge(cric.isFreeHit ? "FREE HIT SAFE!" : "DROPPED! RUN!", "bg-emerald-500/20 border-emerald-400 text-emerald-300");
+                setCommentary(cric.isFreeHit ? "🎙️ Caught on a Free Hit — doesn't count! Sprint!" : "🎙️ OH! Put down in the outfield! Safe — sprint for runs!");
               }
             } else if (!b.inAir || b.z <= 8) {
+              // Authentic Cricket Rush human touch: occasional 12% fielder fumble on fast ground balls!
+              const ballSpd = Math.hypot(b.vx, b.vy);
+              if (!b.fumbled && ballSpd > 140 && Math.random() < 0.12) {
+                b.fumbled = true;
+                b.vx *= 0.45;
+                b.vy *= 0.45;
+                f.x -= Math.sign(b.vx || 1) * 18;
+                showTimingBadge("FUMBLE! STEAL A RUN!", "bg-amber-500/25 border-amber-400 text-amber-300");
+                setCommentary("🎙️ MISFIELD! The fielder fumbles it — chance for an extra run!");
+                return;
+              }
               cric.phase = "returning";
               cric.throwActive = true;
               cric.throwTargetEnd = cric.runningActive ? (cric.runnerDir === 1 ? "top" : "bot") : "bot";
@@ -2111,8 +2621,8 @@
       } else if (cric.phase === "between") {
         cric.phaseTimer -= dt;
         cric.targetCamX = 0;
-        cric.targetCamY = 0;
-        cric.targetCamZoom = Math.min(cric.viewW, cric.viewH) / 365;
+        cric.targetCamY = battingCamY;
+        cric.targetCamZoom = battingZoom;
         if (cric.phaseTimer <= 0 && !cric.matchOver) {
           cricketSetupNextBall();
         }
@@ -2124,12 +2634,14 @@
         const topDot = document.getElementById("cricRunnerTop");
         const botDot = document.getElementById("cricRunnerBot");
         const p = Math.min(1, cric.runProgress);
+        const travelPx = window.innerWidth <= 640 ? 42 : 64;
+        const padPx = window.innerWidth <= 640 ? 4 : 6;
         if (cric.runnerDir === 1) {
-          topDot.style.top = `${6 + p * 64}px`;
-          botDot.style.bottom = `${6 + p * 64}px`;
+          topDot.style.top = `${padPx + p * travelPx}px`;
+          botDot.style.bottom = `${padPx + p * travelPx}px`;
         } else {
-          topDot.style.top = `${70 - p * 64}px`;
-          botDot.style.bottom = `${70 - p * 64}px`;
+          topDot.style.top = `${padPx + travelPx - p * travelPx}px`;
+          botDot.style.bottom = `${padPx + travelPx - p * travelPx}px`;
         }
 
         if (cric.runProgress >= 1) {
@@ -2138,6 +2650,7 @@
           cric.runCountThisBall++;
           document.getElementById("cricBallRunsNum").textContent = cric.runCountThisBall;
           cricAudio.playRunComplete();
+          updateActionControlButton();
         }
       }
 
